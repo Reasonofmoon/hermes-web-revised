@@ -1,31 +1,28 @@
 # Contributing to Hermes for Web (Revised Fork)
 
-> **현재 stage**: Phase 1 invitational beta (PRD §5.1)
-> **Repo visibility**: private — collaborator 초대 받은 분만 접근 가능
-> **Phase 3 (public OSS) 진입 조건**: PRD §11.3 의 public-launch gate 통과 시
+> **현재 stage**: Public beta (2026-05-13 공개 전환)
+> **Repo visibility**: public — 누구나 clone / fork / issue 가능
+> **Write access**: maintainer 가 승인한 collaborator 만 (Phase 1 PDCA 검증 단계)
 
-이 문서는 *초대받은 Phase 1 tester / collaborator* 를 위한 워크플로우입니다. 외부 contributor 가 자유롭게 PR 보낼 수 있는 stage 는 아직 아닙니다 (Phase 3 이후 예정).
+이 문서는 *Phase 1 tester* (피드백 제공자) 와 *Write 권한 collaborator* (코드 기여자) 의 워크플로우를 모두 다룹니다. 누구나 issue 와 PR 을 보낼 수 있지만, merge 는 maintainer review 후 진행됩니다.
 
 ---
 
-## 1. Quickstart for invited collaborators
-
-이미 collaborator 초대 이메일을 받았다면:
+## 1. Quickstart
 
 ```bash
-# 1. GitHub에서 초대 수락 (이메일 또는 https://github.com/notifications)
-# 2. 로컬 clone
+# 1. 로컬 clone (public repo — 초대 불필요)
 git clone https://github.com/Reasonofmoon/hermes-web-revised.git hermes-for-web
 cd hermes-for-web
 
-# 3. Hermes Agent 가 sibling 위치에 있어야 함
+# 2. Hermes Agent 가 sibling 위치에 있어야 함
 #    ../hermes-agent/run_agent.py 확인
 ls ../hermes-agent/run_agent.py
 
-# 4. 서버 띄우기
+# 3. 서버 띄우기
 ./start.sh 8787
 
-# 5. 브라우저 http://localhost:8787
+# 4. 브라우저 http://localhost:8787
 ```
 
 막히면 [`docs/tester-onboarding.md`](docs/tester-onboarding.md) 의 §0-§1 참조.
@@ -34,25 +31,31 @@ ls ../hermes-agent/run_agent.py
 
 ## 2. 권한 정책
 
+Public repo 이므로 read / clone / fork / issue 는 누구나 가능. Write 권한 (직접 push) 은 maintainer 가 승인한 collaborator 만.
+
 | 역할 | 권한 | 대상 |
 |------|------|------|
-| **Read** | clone + issue 보기 + 댓글 | Phase 1 tester (피드백만, 코드 변경 X) |
-| **Triage** | + issue/PR label · close | (현재 미사용) |
-| **Write** | + push to feature branches + merge own PR | maintainer 가 신뢰하는 reviewer |
+| **Anonymous** | clone + fork + issue 등록 + PR 제출 | 누구나 (GitHub 계정만 있으면) |
+| **Triage** | + issue/PR label · close | maintainer 위임 시 |
+| **Write** | + push to feature branches + merge own PR | maintainer 가 승인한 정기 contributor |
 | **Admin** | + repo 설정 | maintainer (Reasonofmoon) 만 |
 
-**기본**: 초대 시 *Read* 권한. 작업 가치 보이면 maintainer 가 Write 로 upgrade.
+**기본**: 외부 contributor 는 fork → PR 흐름. 가치 있는 PR 을 여러 번 보낸 분에게는 maintainer 가 Write 권한 부여.
 
 ---
 
 ## 3. Phase 1 tester workflow (코드 변경 안 함)
 
+피드백만 주실 분 (Phase 1 PDCA 검증):
+
 1. [`docs/tester-onboarding.md`](docs/tester-onboarding.md) 60분 가이드 따라가기
-2. 막히는 단계 발견 → GitHub Issue 만들기 (템플릿 §5.2)
+2. 막히는 단계 발견 → GitHub Issue 만들기 (템플릿 §4)
 3. 1주일 후 D7 follow-up 4 질문에 답하기
 4. 끝.
 
 코드 직접 수정 X. 막힘 보고만 가치 있음 — maintainer 가 그 보고로 다음 sprint 우선순위 정합니다.
+
+> 💡 PRD §11.3 의 public-launch gate (N=3 PDCA + D7≥30% + 0 blocker) 는 아직 미충족 상태에서 public 으로 전환했습니다. Phase 1 tester 검증이 진행 중이며, 피드백이 그 게이트를 메우는 핵심 자료입니다.
 
 ---
 
@@ -83,9 +86,10 @@ docs/tester-onboarding.md §[몇 번] 의 [어떤 동작] 에서
 
 ---
 
-## 5. Write 권한 받은 collaborator workflow
+## 5. 외부 contributor / Write collaborator workflow
 
-> 이 섹션은 maintainer 가 직접 Write 권한 부여한 collaborator 만 해당.
+> 외부 contributor: fork → 본인 fork 에서 작업 → upstream 에 PR.
+> Write collaborator: 직접 branch push 가능.
 
 ### 5.1 작업 흐름
 

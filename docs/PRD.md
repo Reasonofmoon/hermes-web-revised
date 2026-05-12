@@ -1,7 +1,8 @@
 # Hermes for Web — Product Requirements Document (PRD)
 
-> **Version**: v1.0 · **Date**: 2026-05-12 · **Owner**: solo maintainer (@Reasonofmoon)
-> **Status**: draft for internal review · **Target stage**: private repo → invitational beta → public OSS
+> **Version**: v1.1 · **Date**: 2026-05-13 · **Owner**: solo maintainer (@Reasonofmoon)
+> **Status**: live · **Current stage**: **public beta (2026-05-13)** — Phase 1 PDCA validation continues post-flip
+> **Stage transition log**: private (2026-05-12) → public beta (2026-05-13, ahead of §11.3 gate — see §11.4)
 > **Companion docs**: [`README.md`](../README.md) (user-facing) · [`docs/SPEC.md`](SPEC.md) (technical) · [`docs/audits/app-factory-2026-05-12.md`](audits/app-factory-2026-05-12.md) (audit)
 
 This PRD addresses the 13-category L9-quality/spec-audit rubric used by [app-factory](https://github.com/Reasonofmoon/app-factory). The previous audit on `README.md` scored 6.1 / 10 (B) because a README and a PRD optimize for different readers. This document targets ≥8.5 (T2 A-tier) by giving each rubric category a dedicated section.
@@ -344,8 +345,23 @@ For breaking UI changes (theme default, sidebar restructure, layout toggle):
 - [ ] D7 retention ≥30% in invitational beta
 - [ ] Zero blocker issues open
 - [ ] All Setup Packs verified on clean machines (one per OS: macOS, Linux, WSL)
-- [ ] English `README.en.md` synchronized with Korean `README.md`
-- [ ] License + contributor guide in place
+- [x] English `README.en.md` synchronized with Korean `README.md`
+- [x] License + contributor guide in place
+
+### 11.4 Early public flip (2026-05-13)
+
+Repo visibility flipped to public **before** §11.3 gate fully met. Decision rationale and risk mitigation:
+
+| Aspect | Pre-flip state | Mitigation chosen |
+|--------|---------------|--------------------|
+| N=3 PDCA validation | 0 / 3 (recruitment not started) | Use public discoverability as a recruitment channel itself — Issues open for early feedback |
+| D7 retention | not measured | localStorage telemetry deferred to S25; first public users provide qualitative signal |
+| Setup Pack OS coverage | macOS / Linux / WSL not externally verified | README + tester-onboarding.md set expectations; bug reports drive fixes |
+| Blocker count | unknown without external eyes | Public access is itself the discovery mechanism |
+
+Risk: bad first impression if early users hit blockers. Counter-risk if delayed: no users, no signal, indefinite Phase 1.
+
+Reversibility: low-cost — public-to-private flip is one CLI call (`gh repo edit --visibility private`) if a critical issue surfaces. Issues + PRs remain in repo history.
 
 ---
 

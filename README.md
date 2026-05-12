@@ -1,6 +1,7 @@
 # Hermes for Web
 
-[![Private Repo Ready](https://img.shields.io/badge/release-private%20repo%20ready-f4a6c1?style=for-the-badge)](https://github.com/reallygood83/hermes-for-web)
+[![Public Beta](https://img.shields.io/badge/release-public%20beta-7bc47f?style=for-the-badge)](https://github.com/Reasonofmoon/hermes-web-revised)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![기본 테마](https://img.shields.io/badge/theme-%EB%B2%9A%EA%BD%83-ffb7d5?style=for-the-badge)](#테마--개인화)
 [![Setup Packs](https://img.shields.io/badge/workflows-setup%20packs-9ec5ff?style=for-the-badge)](#setup-packs)
 [![YouTube](https://img.shields.io/badge/YouTube-배움의%20달인-ff4b5c?style=for-the-badge&logo=youtube)](https://www.youtube.com/@%EB%B0%B0%EC%9B%80%EC%9D%98%EB%8B%AC%EC%9D%B8-p5v)
@@ -222,8 +223,8 @@ Preflight 는 비행기 이륙 전 체크리스트 같은 기능입니다.
 # 원본 (reallygood83)
 git clone https://github.com/reallygood83/hermes-for-web.git
 
-# 또는 이 fork (Reasonofmoon, 본 README 의 기능이 추가된 버전 — 현재 invitational 상태,
-# Phase 1 collaborator 만 접근 가능)
+# 또는 이 fork (Reasonofmoon, 본 README 의 기능이 추가된 버전 — public beta,
+# 누구나 clone 가능. 코드 기여는 [CONTRIBUTING.md](CONTRIBUTING.md) 참조)
 git clone https://github.com/Reasonofmoon/hermes-web-revised.git hermes-for-web
 
 cd hermes-for-web
@@ -231,8 +232,9 @@ cd hermes-for-web
 ```
 
 > 본 fork의 추가 기능 (Artifact-First, Agent Desk, UI overhaul 등) 을 쓰려면
-> 두 번째 URL 을 사용하세요. 현재 invitational beta — collaborator 초대를 받은 분만
-> clone 가능합니다. 관심이 있으시면 [recruitment 가이드](docs/recruitment-plan.md) 참조.
+> 두 번째 URL 을 사용하세요. **Public beta — 2026-05-13 부터 공개**.
+> 막힘 보고는 GitHub Issue, 코드 기여는 PR 환영 ([CONTRIBUTING.md](CONTRIBUTING.md)).
+> Phase 1 tester 가이드: [`docs/tester-onboarding.md`](docs/tester-onboarding.md).
 
 그 다음 브라우저에서:
 
