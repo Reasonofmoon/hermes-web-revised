@@ -367,6 +367,50 @@ README 상단 배지에도 같은 링크가 있습니다.
 
 ==================================================
 
+## bkit / PDCA Workflow 지원
+
+Hermes for Web 은 **App Factory + bkit** 의 *PDCA 사이클* 과 *Next Best Move* 패턴을 자연스럽게 지원하도록 설계되어 있습니다. 즉, "아이디어 → 실행 → 점검 → 다음 한 걸음" 의 루프를 UI 위에서 그대로 따라갈 수 있습니다.
+
+### PDCA 사이클 매핑
+
+| bkit Phase | 의미 | Hermes for Web 에서 |
+|-----------|------|---------------------|
+| **Plan** | 스펙 · 범위 · acceptance criteria 정의 | Setup Packs · Preflight Validator · 새 세션 |
+| **Do** | 가장 작은 유용한 변경 또는 결과물 | 원클릭 워크플로우 · Hermes 응답 · 아티팩트 자동 생성 |
+| **Check** | 검증 · 테스트 · 리뷰 | Preflight · git status · 사용자 검토 |
+| **Act** | 통합 · 문서 갱신 · 다음 슬라이스 | 아티팩트 편집 · 메모리 저장 · 텔레그램 핸드오프 |
+| **Report** | 결과 + 다음 best move 요약 | Hermes 응답 footer · 세션 export · ShareNote |
+
+### Next Best Move Footer
+
+```text
+Next best move: <one concrete action>
+Reason: <왜 이게 가장 high-leverage 인가>
+Gate: <scope|quality|security|docs|release>
+Automation: <manual|guided|semi_auto|auto>
+Risk: <low|medium|high>
+```
+
+예시 프롬프트:
+> "지금부터 모든 응답 마지막에 bkit 형식의 Next best move 를 붙여줘."
+
+### bkit 스킬 설치
+
+```bash
+# Claude Code
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.claude/skills/
+
+# Codex
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.codex/skills/
+
+# Hermes CLI
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.hermes/skills/
+```
+
+자세한 내용은 [README.md 의 bkit 섹션](README.md#bkit--pdca-workflow-지원) 또는 zip 안의 SKILL.md / references 참조.
+
+==================================================
+
 ## 추천 다음 단계
 
 private repo 올린 뒤에는 이렇게 가는 걸 추천합니다.

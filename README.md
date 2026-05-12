@@ -369,6 +369,112 @@ README 상단 배지에도 같은 링크가 있습니다.
 
 ==================================================
 
+## bkit / PDCA Workflow 지원
+
+Hermes for Web 은 **App Factory + bkit** 의 *PDCA 사이클* 과 *Next Best Move* 패턴을 자연스럽게 지원하도록 설계되어 있습니다. 즉, "아이디어 → 실행 → 점검 → 다음 한 걸음" 의 루프를 UI 위에서 그대로 따라갈 수 있습니다.
+
+이 섹션은 *왜 hermes-for-web 이 단순 챗 UI 보다 워크플로우 도구에 가까운가* 를 한눈에 보여 줍니다.
+
+### PDCA 사이클 매핑
+
+bkit 의 5 단계 사이클이 Hermes for Web 의 어느 기능에 대응되는지:
+
+| bkit Phase | 의미 | Hermes for Web 에서 |
+|-----------|------|---------------------|
+| **Plan** | 스펙 · 범위 · acceptance criteria 정의 | Setup Packs · Preflight Validator · 새 세션 (workspace 결정) |
+| **Do** | 가장 작은 유용한 변경 또는 결과물 | 원클릭 워크플로우 버튼 · Hermes 응답 스트림 · 아티팩트 자동 생성 |
+| **Check** | 검증 · 테스트 · 리뷰 | Preflight 점검 · 워크스페이스 git status · 사용자 직접 검토 |
+| **Act** | 통합 · 문서 갱신 · 다음 슬라이스 선택 | 아티팩트 편집/revision · 메모리 저장 · 텔레그램 핸드오프 |
+| **Report** | 결과 + 다음 best move 요약 | Hermes 응답 footer · 세션 export · ShareNote 공유 |
+
+### Next Best Move 패턴
+
+bkit 의 핵심은 *모든 응답이 다음 한 걸음을 제안하는 것* 입니다:
+
+```text
+Next best move: <one concrete action>
+Reason: <왜 이게 가장 high-leverage 인가>
+Gate: <scope|quality|security|docs|release>
+Automation: <manual|guided|semi_auto|auto>
+Risk: <low|medium|high>
+```
+
+Hermes 응답에 이 footer 를 요청하면 자동으로 만들어집니다.
+
+예시 프롬프트:
+> "지금부터 모든 응답 마지막에 bkit 형식의 Next best move 를 붙여줘."
+
+### 자동화 레벨
+
+| 레벨 | 의미 | hermes-for-web 어디서 |
+|------|------|---------------------|
+| `manual` | 모든 동작 승인 필요 | 위험 명령 (terminal 도구의 approval gate) |
+| `guided` | 읽기 · 검토 자유, 쓰기 전 승인 | 파일 작업 · git operation |
+| `semi_auto` | 비파괴 + 범위 한정 편집 자동 | 아티팩트 추출 · 메모리 갱신 · 모델 응답 |
+| `auto` | 사전 승인된 워크플로우 | Cron 작업 · Setup Pack 실행 |
+
+기본값: 일반 채팅은 `semi_auto`, 파일 변경 / git 푸시 / 외부 발송은 `guided` 로 동작합니다.
+
+### Quality Gates
+
+변경이 어느 게이트를 통과했는지 명시 (응답에 포함 또는 PR 본문에):
+
+- `scope` — 영향 범위 + acceptance criteria 이해
+- `quality` — 검증 완료 또는 그게 다음 action
+- `security` — 위험 · 시크릿 · 외부 효과 검토
+- `docs` — 문서 · 플랜 · 구현 동기화
+- `release` — 발행 전 광범위 검증
+
+### bkit 스킬 설치
+
+이 레포에 포함된 스킬 패키지를 풀어서 글로벌 사용:
+
+```bash
+# Claude Code (Windows)
+Expand-Archive docs/skill-packages/app-factory-bkit.zip -DestinationPath $env:USERPROFILE/.claude/skills/
+
+# Claude Code (macOS/Linux)
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.claude/skills/
+
+# Codex
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.codex/skills/
+
+# Hermes CLI
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.hermes/skills/
+```
+
+설치 후 "PDCA", "next best move", "quality gate" 같은 자연어 트리거로 자동 활성화. Claude Code 에서는 `/app-factory-bkit` 슬래시 명령으로도 호출 가능.
+
+### 더 깊이 알기
+
+| 문서 | 내용 |
+|------|------|
+| [`docs/skill-packages/app-factory-bkit.zip`](docs/skill-packages/app-factory-bkit.zip) | 스킬 패키지 (SKILL.md + 3개 reference) |
+| `SKILL.md` (zip 안) | 5 단계 PDCA · Next Best Move 스키마 · 자동화 가이드 |
+| `references/bkit.md` | PDCA · automation levels · quality gates · hooks · agent teams |
+| `references/app-factory.md` | module manifest · envelope · catalog · provenance |
+| `references/hermes-adaptation.md` | Hermes 매핑 (tool schema → manifest, session DB → envelope 등) |
+
+### EdTech 워크플로우 예시 (영어 학습 콘텐츠 제작 기준)
+
+```text
+[Plan]   Setup Pack "Obsidian Starter" 실행 → vault 경로 확정
+[Do]     원클릭 워크플로우 "노트 생성" → Hermes 가 5차시 강의안 초안 작성
+[Check]  아티팩트 패널에서 slides 렌더로 페이지별 확인 + Preflight 점검
+[Act]    인라인 편집으로 1차시 수정 → revision 저장 → 메모리에 학습자 프로필 업데이트
+[Report] ShareNote 노트 생성 → 텔레그램 핸드오프로 학생에게 공유
+
+Next best move: 2차시 워크북 만들기 ("아티팩트 빠른 실행" → "포스팅 브리프 생성")
+Reason: 강의안 차시별 출력 일관성 확보가 다음 quality gate
+Gate: scope
+Automation: semi_auto
+Risk: low
+```
+
+이런 흐름이 *AI 채팅 UI* 보다 *작업실* 에 가까운 이유입니다.
+
+==================================================
+
 ## 추천 다음 단계
 
 private repo 올린 뒤에는 이렇게 가는 걸 추천합니다.
