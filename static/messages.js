@@ -189,6 +189,12 @@ async function send(){
         clearLiveToolCards();
         S.busy=false;
         syncTopbar();renderMessages();loadDir('.');
+        // Artifact extraction (MVP-1): scan messages for noteworthy outputs
+        // and accumulate them in the per-session localStorage gallery.
+        if(typeof window.extractAndStoreArtifacts === 'function'){
+          try{ window.extractAndStoreArtifacts(S.messages, activeSid); }
+          catch(err){ console.warn('[artifacts] extract failed:', err.message); }
+        }
       }
       renderSessionList();setBusy(false);setStatus('');
     });
