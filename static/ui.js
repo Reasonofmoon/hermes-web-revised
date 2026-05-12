@@ -64,6 +64,10 @@ async function populateModelDropdown(){
     if(data.default_model && !localStorage.getItem('hermes-webui-model')){
       _applyModelToDropdown(data.default_model, sel);
     }
+    // Sync the model chip with whatever value the dropdown ended up on,
+    // so the topbar shows the active model BEFORE the first session renders.
+    const chip=$('modelChip');
+    if(chip && sel.value) chip.textContent=getModelLabel(sel.value);
   }catch(e){
     // API unavailable -- keep the hardcoded HTML options as fallback
     console.warn('Failed to load models from server:',e.message);

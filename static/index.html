@@ -201,6 +201,8 @@
       <div class="field-label" style="font-size:10px;letter-spacing:.07em;margin-bottom:4px">모델</div>
       <select id="modelSelect">
         <optgroup label="OpenAI">
+          <option value="openai/gpt-5.5">GPT-5.5</option>
+          <option value="openai/gpt-5.4">GPT-5.4</option>
           <option value="openai/gpt-5.4-mini">GPT-5.4 Mini</option>
           <option value="openai/gpt-4o">GPT-4o</option>
           <option value="openai/o3">o3</option>
@@ -248,7 +250,7 @@
           <div class="chip profile-chip" id="profileChip" onclick="toggleProfileDropdown()" title="프로필 전환" style="cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="profileChipLabel">default</span> &#9662;</div>
           <div class="profile-dropdown" id="profileDropdown"></div>
         </div>
-        <div class="chip model" id="modelChip">GPT-5.4 Mini</div>
+        <div class="chip model" id="modelChip">GPT-5.5</div>
 
         <button class="chip clear-btn" id="btnClearConv" onclick="clearConversation()" title="이 대화의 메시지 전체 지우기" style="display:none">&#128465; 지우기</button>
         <button class="chip gear-btn" id="btnSettings" onclick="toggleSettings()" title="설정">&#9881;</button>

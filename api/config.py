@@ -205,7 +205,7 @@ def _discover_default_workspace() -> Path:
     return (STATE_DIR / 'workspace').resolve()
 
 DEFAULT_WORKSPACE = _discover_default_workspace()
-DEFAULT_MODEL     = os.getenv('HERMES_WEBUI_DEFAULT_MODEL', 'openai/gpt-5.4-mini')
+DEFAULT_MODEL     = os.getenv('HERMES_WEBUI_DEFAULT_MODEL', 'openai/gpt-5.5')
 
 # ── Startup diagnostics ───────────────────────────────────────────────────────
 def print_startup_config() -> None:
