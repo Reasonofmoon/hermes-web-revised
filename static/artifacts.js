@@ -333,7 +333,9 @@ function renderArtifactPanel(){
       const saveIcon = (typeof window.icon === 'function') ? window.icon('bookmark', {size: 13, stroke: 1.8}) : '⬇';
       list.innerHTML = `
         <div class="artifact-empty">
-          <div class="artifact-empty-art">${(typeof window.icon === 'function') ? window.icon('artifact', {size: 56, stroke: 1.2, cls: 'art-illus'}) : ''}</div>
+          <div class="artifact-empty-art">
+            <img src="/static/images/artifact-empty-state.png?v=20260512e" alt="" loading="lazy">
+          </div>
           <h4>아직 산출물이 없습니다</h4>
           <p>대화에서 마크다운 노트(<code># 제목</code> + 200자 이상)나
           긴 코드 블록(30줄 이상)이 응답에 포함되면 자동으로 누적됩니다.</p>

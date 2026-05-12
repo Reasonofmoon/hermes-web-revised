@@ -1705,17 +1705,54 @@ body.resizing{user-select:none;cursor:col-resize;}
   border-radius: 2px;
 }
 
-/* Empty state illustration in the artifact panel */
+/* Empty state illustration in the artifact panel (PNG image) */
 .artifact-empty-art {
   display: flex;
   justify-content: center;
-  margin: 12px auto 16px;
-  color: var(--muted);
-  opacity: 0.4;
+  margin: 6px auto 14px;
 }
-.artifact-empty-art .icon {
-  width: 56px;
-  height: 56px;
+.artifact-empty-art img {
+  width: 200px;
+  max-width: 80%;
+  height: auto;
+  border-radius: 14px;
+  opacity: 0.92;
+  /* Cream PNG background blends with cherry-blossom theme; soften on dark themes */
+  mix-blend-mode: normal;
+  transition: opacity 0.2s ease;
+}
+.artifact-empty-art img:hover { opacity: 1; }
+/* On dark themes the cream image stands out as a card — accept that and frame it softly */
+:root[data-theme="dark"] .artifact-empty-art img,
+:root:not([data-theme]) .artifact-empty-art img {
+  opacity: 0.78;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Sidebar logo replaced by PNG mark */
+.sidebar-header .logo {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent !important;  /* override any prior bg */
+  color: transparent;                   /* hide the previous "H" text fallback */
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-header .logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 10px;
+  /* Slight inset shadow on dark themes to soften the white plate */
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+}
+:root[data-theme="dark"] .sidebar-header .logo img,
+:root:not([data-theme]) .sidebar-header .logo img {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 /* Correction comments label — align SVG with text */
