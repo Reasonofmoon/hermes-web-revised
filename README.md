@@ -219,10 +219,20 @@ Preflight 는 비행기 이륙 전 체크리스트 같은 기능입니다.
 ### 로컬에서 바로 실행
 
 ```bash
+# 원본 (reallygood83)
 git clone https://github.com/reallygood83/hermes-for-web.git
+
+# 또는 이 fork (Reasonofmoon, 본 README 의 기능이 추가된 버전 — 현재 invitational 상태,
+# Phase 1 collaborator 만 접근 가능)
+git clone https://github.com/Reasonofmoon/hermes-web-revised.git hermes-for-web
+
 cd hermes-for-web
 ./start.sh 8788
 ```
+
+> 본 fork의 추가 기능 (Artifact-First, Agent Desk, UI overhaul 등) 을 쓰려면
+> 두 번째 URL 을 사용하세요. 현재 invitational beta — collaborator 초대를 받은 분만
+> clone 가능합니다. 관심이 있으시면 [recruitment 가이드](docs/recruitment-plan.md) 참조.
 
 그 다음 브라우저에서:
 
