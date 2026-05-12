@@ -30,6 +30,8 @@ let _deskFilter = '';                    // search term
 let _deskExpanded = new Set();           // expanded task ids (show description)
 let _autoSessionCards = [];              // Phase Desk-2: sessions surfaced as cards
 let _showAutoSessions = true;            // toggle visibility of auto-surfaced sessions
+let _autoCronCards    = [];              // Phase Desk-3: cron jobs surfaced as cards
+let _showAutoCrons    = true;            // toggle visibility of auto-surfaced cron jobs
 
 // ── Storage ────────────────────────────────────────────────────────────────
 function _loadDeskTasks(){
@@ -198,9 +200,12 @@ function renderDeskBoard(){
   const filteredManual   = manualTasks.filter(matchesSearch);
   const filteredSessions = sessionCards.filter(matchesSearch);
 
-  // Bucket by status. Manual tasks first (user-owned), then session cards.
+  // Phase Desk-3: cron cards filtered by search too
+  const filteredCrons = _autoCronCards.filter(matchesSearch);
+
+  // Bucket by status. Manual tasks first (user-owned), then session, then cron.
   const byStatus = {};
-  for(const c of _DESK_COLS) byStatus[c.id] = {manual: [], session: []};
+  for(const c of _DESK_COLS) byStatus[c.id] = {manual: [], session: [], cron: []};
   for(const t of filteredManual){
     const status = t.status && byStatus[t.status] ? t.status : 'inbox';
     byStatus[status].manual.push(t);
@@ -208,6 +213,10 @@ function renderDeskBoard(){
   for(const c of filteredSessions){
     const status = byStatus[c.status] ? c.status : 'inbox';
     byStatus[status].session.push(c);
+  }
+  for(const c of filteredCrons){
+    const status = byStatus[c.status] ? c.status : 'inbox';
+    byStatus[status].cron.push(c);
   }
   // Sort each group: high priority first, then newest first.
   const sortByPrioThenTime = (a, b) => {
@@ -219,10 +228,11 @@ function renderDeskBoard(){
   for(const k of Object.keys(byStatus)){
     byStatus[k].manual.sort(sortByPrioThenTime);
     byStatus[k].session.sort(sortByPrioThenTime);
+    byStatus[k].cron.sort(sortByPrioThenTime);
   }
 
-  // Empty state — only when there are zero manual tasks AND zero session cards.
-  if(!manualTasks.length && !sessionCards.length){
+  // Empty state — only when there are zero manual tasks, zero session cards, AND zero cron.
+  if(!manualTasks.length && !sessionCards.length && !_autoCronCards.length){
     root.innerHTML = `
       <div class="desk-empty">
         <h4>아직 작업이 없습니다</h4>
@@ -241,13 +251,18 @@ function renderDeskBoard(){
       <label>
         <input type="checkbox" ${_showAutoSessions ? 'checked' : ''}
                onchange="toggleAutoSessions()">
-        자동 세션 카드 표시 (${_autoSessionCards.length}개)
+        자동 세션 카드 (${_autoSessionCards.length}개)
+      </label>
+      <label>
+        <input type="checkbox" ${_showAutoCrons ? 'checked' : ''}
+               onchange="toggleAutoCrons()">
+        예약 작업 카드 (${_autoCronCards.length}개)
       </label>
     </div>`;
 
   root.innerHTML = autoToggle + _DESK_COLS.map(c => {
-    const bucket = byStatus[c.id] || {manual: [], session: []};
-    const total = bucket.manual.length + bucket.session.length;
+    const bucket = byStatus[c.id] || {manual: [], session: [], cron: []};
+    const total = bucket.manual.length + bucket.session.length + bucket.cron.length;
     return `
       <section class="desk-column" data-status="${c.id}">
         <header class="desk-col-header" style="--col-accent:${c.accent}">
@@ -258,7 +273,8 @@ function renderDeskBoard(){
           ${total === 0
             ? `<div class="desk-col-empty">비어 있음</div>`
             : bucket.manual.map(t => _renderTaskCard(t)).join('')
-              + bucket.session.map(c => _renderSessionCard(c)).join('')}
+              + bucket.session.map(c => _renderSessionCard(c)).join('')
+              + bucket.cron.map(c => _renderCronCard(c)).join('')}
         </div>
       </section>`;
   }).join('');
@@ -378,6 +394,144 @@ function promoteSessionToTask(sid, ev){
   if(typeof window.showToast === 'function') window.showToast('Task 로 등록됨 — 자유롭게 편집 가능');
 }
 
+// ── Phase Desk-3: surface scheduled (cron) jobs as cards ──────────────────
+//
+// Status mapping (deterministic):
+//   - last_status === 'error'            → review (검토 필요, 빨강 보더)
+//   - !enabled || state === 'paused'     → done   (완료/일시중지, 회색)
+//   - next_run within 24h                → doing  (진행 중, 가까운 실행)
+//   - other active scheduled             → inbox  (예정)
+
+async function loadAutoCronCards(){
+  if(!_showAutoCrons){
+    _autoCronCards = [];
+    return;
+  }
+  try{
+    let jobs;
+    if(typeof window.api === 'function'){
+      const data = await window.api('/api/crons');
+      jobs = data && data.jobs || [];
+    } else {
+      const r = await fetch(new URL('/api/crons', location.origin).href, {credentials:'include'});
+      const data = await r.json();
+      jobs = data && data.jobs || [];
+    }
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    _autoCronCards = jobs.map(j => {
+      let status = 'inbox';
+      if(j.last_status === 'error')               status = 'review';
+      else if(j.enabled === false || j.state === 'paused') status = 'done';
+      else if(j.next_run_at && (j.next_run_at - now) < dayMs && j.next_run_at > now) status = 'doing';
+      // else 'inbox'
+      return {
+        _kind: 'cron',
+        id: 'cron_' + j.id,
+        jobId: j.id,
+        title: j.name || '(이름 없음)',
+        description: (j.prompt || '').slice(0, 200),
+        schedule: j.schedule_display || (j.schedule && j.schedule.expression) || '',
+        status,
+        priority: j.last_status === 'error' ? 'high' : 'normal',
+        deliver: j.deliver || 'local',
+        enabled: j.enabled !== false,
+        state: j.state || 'active',
+        lastStatus: j.last_status || '',
+        nextRunAt: j.next_run_at || 0,
+        lastRunAt: j.last_run_at || 0,
+        createdAt: j.created_at || 0,
+        updatedAt: j.last_run_at || j.created_at || 0,
+      };
+    });
+  }catch(e){
+    console.warn('[desk] cron surface failed:', e.message);
+    _autoCronCards = [];
+  }
+}
+
+function toggleAutoCrons(){
+  _showAutoCrons = !_showAutoCrons;
+  if(_showAutoCrons){
+    loadAutoCronCards().then(() => renderDeskBoard());
+  } else {
+    _autoCronCards = [];
+    renderDeskBoard();
+  }
+}
+
+// Quick actions delegate to the existing cron functions on window
+// (defined in panels.js). After the action, we refresh.
+async function cronCardRun(jobId, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(typeof window.cronRun === 'function'){
+    await window.cronRun(jobId);
+    setTimeout(() => loadAutoCronCards().then(() => renderDeskBoard()), 500);
+  }
+}
+async function cronCardPause(jobId, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(typeof window.cronPause === 'function'){
+    await window.cronPause(jobId);
+    setTimeout(() => loadAutoCronCards().then(() => renderDeskBoard()), 300);
+  }
+}
+async function cronCardResume(jobId, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(typeof window.cronResume === 'function'){
+    await window.cronResume(jobId);
+    setTimeout(() => loadAutoCronCards().then(() => renderDeskBoard()), 300);
+  }
+}
+// Card click → switch to the Tasks (cron) panel and scroll to job
+function openCronCard(jobId, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(typeof window.switchPanel === 'function') window.switchPanel('tasks');
+  setTimeout(() => {
+    const el = document.getElementById('cron-' + jobId);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 200);
+}
+
+function _formatCronTime(ms){
+  if(!ms) return '';
+  const diff = ms - Date.now();
+  const abs = Math.abs(diff);
+  if(abs < 60_000)        return diff > 0 ? '곧' : '방금';
+  if(abs < 3_600_000)     return Math.floor(abs/60_000) + (diff > 0 ? '분 후' : '분 전');
+  if(abs < 86_400_000)    return Math.floor(abs/3_600_000) + (diff > 0 ? '시간 후' : '시간 전');
+  return Math.floor(abs/86_400_000) + (diff > 0 ? '일 후' : '일 전');
+}
+
+function _renderCronCard(c){
+  const isPaused = c.state === 'paused' || !c.enabled;
+  const isError  = c.lastStatus === 'error';
+  const nextLine = c.nextRunAt
+    ? `다음 ${_formatCronTime(c.nextRunAt)}`
+    : (isPaused ? '일시중지됨' : '예정 없음');
+  const deliverIcon = c.deliver === 'telegram' ? '📣' : (c.deliver === 'discord' ? '💬' : '📂');
+  return `
+    <div class="desk-card desk-cron-card ${isError ? 'cron-error' : ''} ${isPaused ? 'cron-paused' : ''}"
+         onclick="openCronCard('${c.jobId}')"
+         title="클릭하여 예약 작업 패널에서 열기">
+      <div class="desk-card-header">
+        <span class="desk-cron-marker" title="자동 surface된 cron 카드">&#9201;</span>
+        <div class="desk-card-title">${_escDesk(c.title)}</div>
+        <span class="desk-cron-deliver" title="배달 채널: ${_escDesk(c.deliver)}">${deliverIcon}</span>
+      </div>
+      <div class="desk-card-meta">
+        <span>${_escDesk(c.schedule || '스케줄 없음')}</span>
+        <span>${nextLine}</span>
+      </div>
+      <div class="desk-cron-actions">
+        ${isPaused
+          ? `<button class="desk-cron-btn" onclick="cronCardResume('${c.jobId}', event)" title="재개">▶</button>`
+          : `<button class="desk-cron-btn" onclick="cronCardPause('${c.jobId}', event)" title="일시중지">❚❚</button>`}
+        <button class="desk-cron-btn run" onclick="cronCardRun('${c.jobId}', event)" title="지금 실행">⟳</button>
+      </div>
+    </div>`;
+}
+
 function _renderSessionCard(c){
   const isInflight = c.status === 'doing';
   const modelLabel = c.model ? c.model.split('/').pop() : '';
@@ -440,3 +594,10 @@ window.loadAutoSessionCards  = loadAutoSessionCards;
 window.toggleAutoSessions    = toggleAutoSessions;
 window.openSessionFromCard   = openSessionFromCard;
 window.promoteSessionToTask  = promoteSessionToTask;
+// Phase Desk-3 — cron auto-surface + quick actions
+window.loadAutoCronCards     = loadAutoCronCards;
+window.toggleAutoCrons       = toggleAutoCrons;
+window.openCronCard          = openCronCard;
+window.cronCardRun           = cronCardRun;
+window.cronCardPause         = cronCardPause;
+window.cronCardResume        = cronCardResume;

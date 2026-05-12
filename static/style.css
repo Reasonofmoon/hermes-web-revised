@@ -2483,6 +2483,80 @@ button:disabled, [aria-disabled="true"] {
   color: var(--accent);
 }
 
+/* Auto toggle: allow multiple checkboxes (Desk-3 added cron toggle) */
+.desk-auto-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* Phase Desk-3: cron job cards on the kanban board                         */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/* Cron card: solid border (distinct from session dashed), warm accent tint */
+.desk-cron-card {
+  border-style: solid !important;
+  border-left: 3px solid var(--gold, #c9a84c) !important;
+  background: rgba(201, 168, 76, 0.04) !important;
+}
+.desk-cron-card:hover {
+  border-color: var(--gold, #c9a84c) !important;
+  background: rgba(201, 168, 76, 0.10) !important;
+  border-left: 3px solid var(--gold, #c9a84c) !important;
+}
+.desk-cron-card.cron-error {
+  border-left-color: var(--danger, #e58787) !important;
+  background: rgba(229, 135, 135, 0.06) !important;
+}
+.desk-cron-card.cron-paused {
+  opacity: 0.62;
+}
+.desk-cron-marker {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  color: var(--gold, #c9a84c);
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.desk-cron-deliver {
+  flex-shrink: 0;
+  font-size: 12px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+.desk-cron-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border, rgba(255,255,255,0.08));
+}
+.desk-cron-btn {
+  background: transparent;
+  border: 1px solid var(--border2, rgba(255,255,255,0.14));
+  color: var(--muted);
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.12s);
+  font-family: inherit;
+  min-width: 28px;
+}
+.desk-cron-btn:hover {
+  border-color: var(--gold, #c9a84c);
+  color: var(--gold, #c9a84c);
+  background: rgba(201, 168, 76, 0.10);
+}
+.desk-cron-btn.run:hover {
+  border-color: var(--success, #6fcf97);
+  color: var(--success, #6fcf97);
+  background: rgba(111, 207, 151, 0.10);
+}
+
 /* ───────────────────────────────────────────────────────────────────────── */
 /* Auto theme: respect OS prefers-color-scheme when user hasn't picked one  */
 /* ───────────────────────────────────────────────────────────────────────── */

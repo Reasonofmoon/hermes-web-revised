@@ -20,10 +20,11 @@ async function switchPanel(name) {
   if (name === 'setup' && typeof renderSetupPackHistory === 'function') renderSetupPackHistory();
   if (name === 'checks' && typeof renderPreflightResult === 'function') renderPreflightResult('note');
   if (name === 'desk' && typeof window.renderDeskBoard === 'function') {
-    // Phase Desk-2: refresh session auto-surface before rendering
-    if (typeof window.loadAutoSessionCards === 'function') {
-      await window.loadAutoSessionCards();
-    }
+    // Refresh both session (Desk-2) and cron (Desk-3) auto-surfaces in parallel
+    const surfaces = [];
+    if (typeof window.loadAutoSessionCards === 'function') surfaces.push(window.loadAutoSessionCards());
+    if (typeof window.loadAutoCronCards    === 'function') surfaces.push(window.loadAutoCronCards());
+    await Promise.all(surfaces);
     window.renderDeskBoard();
   }
 }
