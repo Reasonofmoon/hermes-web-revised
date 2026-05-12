@@ -1766,3 +1766,197 @@ body.resizing{user-select:none;cursor:col-resize;}
 /* Modal title row uses flex so the icon and text align */
 .artifact-preview-header > h3 { display: flex; align-items: center; gap: 6px; }
 .artifact-preview-header > h3 svg { flex-shrink: 0; }
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* Phase 3.2: wordcard flip + Q&A accordion + manual type select            */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/* Type selector in modal header */
+.artifact-type-select {
+  background: var(--bg2, rgba(255,255,255,0.04));
+  color: var(--text);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+  max-width: 120px;
+}
+.artifact-type-select:hover { border-color: var(--accent, #ffb7d5); }
+
+/* === Wordcard flip deck === */
+.artifact-wordcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+  min-height: 320px;
+}
+.wordcard-flip {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: 240px;
+  perspective: 1200px;
+  cursor: pointer;
+  user-select: none;
+}
+.wordcard-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--bg2, rgba(255,255,255,0.04));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  backface-visibility: hidden;
+  transition: transform 0.55s cubic-bezier(.4,.0,.2,1), box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.wordcard-front {
+  transform: rotateY(0deg);
+}
+.wordcard-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(180deg, rgba(255,183,213,0.10), var(--bg2, rgba(255,255,255,0.04)));
+}
+.wordcard-flip.flipped .wordcard-front { transform: rotateY(-180deg); }
+.wordcard-flip.flipped .wordcard-back  { transform: rotateY(0deg); }
+.wordcard-flip:hover .wordcard-face    { box-shadow: 0 6px 22px rgba(0,0,0,0.18); }
+.wordcard-prompt {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.wordcard-word {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+}
+.wordcard-meaning {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  text-align: center;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.wordcard-hint {
+  position: absolute;
+  bottom: 14px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+.wordcard-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.wordcard-nav-btn {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  color: var(--text);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  min-width: 80px;
+}
+.wordcard-nav-btn:not(:disabled):hover { border-color: var(--accent, #ffb7d5); }
+.wordcard-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.wordcard-counter {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 60px;
+  text-align: center;
+}
+.wordcard-hotkeys {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+}
+
+/* === Q&A accordion === */
+.artifact-qa {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qa-item {
+  background: var(--bg2, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.qa-item.open { border-color: var(--accent, #ffb7d5); }
+.qa-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.qa-question:hover { background: rgba(255,255,255,0.03); }
+.qa-marker {
+  flex-shrink: 0;
+  color: var(--accent, #ffb7d5);
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 28px;
+}
+.qa-marker-a { color: #9be3a0; }
+.qa-text { flex: 1; }
+.qa-text > :first-child { margin-top: 0; }
+.qa-text > :last-child  { margin-bottom: 0; }
+.qa-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+.qa-item.open .qa-chevron { transform: rotate(90deg); }
+.qa-answer {
+  display: none;
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border, rgba(255,255,255,0.08));
+  font-size: 13px;
+  line-height: 1.6;
+  background: rgba(0,0,0,0.06);
+  gap: 10px;
+}
+.qa-item.open .qa-answer { display: flex; align-items: flex-start; padding-top: 12px; }
+.qa-answer .qa-text {
+  flex: 1;
+}
+
+@media (max-width: 700px) {
+  .wordcard-flip   { height: 200px; }
+  .wordcard-word   { font-size: 26px; }
+  .wordcard-meaning{ font-size: 14px; }
+}
