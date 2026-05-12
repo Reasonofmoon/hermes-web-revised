@@ -2405,3 +2405,80 @@ button:disabled, [aria-disabled="true"] {
   padding: 1px 6px;
   border-radius: 4px;
 }
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* Phase Desk-2: session cards auto-surfaced on the kanban board           */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/* Toggle bar at the top of the board */
+.desk-auto-toggle {
+  margin: 0 0 4px;
+  padding: 0 4px;
+}
+.desk-auto-toggle label {
+  font-size: 10px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+.desk-auto-toggle input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+.desk-auto-toggle label:hover { color: var(--text); }
+
+/* Session card: dashed border + slight tint to differentiate from manual */
+.desk-session-card {
+  border-style: dashed !important;
+  border-color: var(--border2, rgba(255,255,255,0.18)) !important;
+  background: rgba(255,255,255,0.015) !important;
+}
+.desk-session-card:hover {
+  border-style: solid !important;
+  border-color: var(--accent) !important;
+  background: var(--accent-soft, rgba(233,69,96,0.18)) !important;
+}
+.desk-session-card.inflight {
+  border-color: var(--success, #6fcf97) !important;
+  background: var(--success-soft, rgba(111,207,151,0.16)) !important;
+  animation: session-pulse 2s ease-in-out infinite;
+}
+@keyframes session-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(111,207,151,0); }
+  50%      { box-shadow: 0 0 0 3px rgba(111,207,151,0.15); }
+}
+.desk-session-marker {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.desk-session-card .desk-card-title {
+  font-style: italic;
+  opacity: 0.92;
+}
+.desk-card-promote {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border2, rgba(255,255,255,0.14));
+  color: var(--muted);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.desk-session-card:hover .desk-card-promote {
+  opacity: 0.95;
+}
+.desk-card-promote:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

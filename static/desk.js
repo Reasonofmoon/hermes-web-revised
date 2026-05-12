@@ -28,6 +28,8 @@ const _DESK_COLS = [
 
 let _deskFilter = '';                    // search term
 let _deskExpanded = new Set();           // expanded task ids (show description)
+let _autoSessionCards = [];              // Phase Desk-2: sessions surfaced as cards
+let _showAutoSessions = true;            // toggle visibility of auto-surfaced sessions
 
 // ── Storage ────────────────────────────────────────────────────────────────
 function _loadDeskTasks(){
@@ -181,53 +183,82 @@ function _renderTaskCard(t){
 function renderDeskBoard(){
   const root = document.getElementById('deskBoard');
   if(!root) return;
-  const all = _loadDeskTasks();
-  const filtered = _deskFilter
-    ? all.filter(t =>
-        (t.title || '').toLowerCase().includes(_deskFilter) ||
-        (t.description || '').toLowerCase().includes(_deskFilter))
-    : all;
-  // Sort within each column: high priority first, then newest first
+  const manualTasks = _loadDeskTasks();
+  // Filter out auto-session cards whose sessionId already exists as a
+  // manual task — once promoted, the manual task takes ownership.
+  const promotedSids = new Set(manualTasks.map(t => t.sessionId).filter(Boolean));
+  const sessionCards = _autoSessionCards.filter(c => !promotedSids.has(c.sessionId));
+
+  // Search filter applies to BOTH kinds.
+  const matchesSearch = (item) =>
+    !_deskFilter ||
+    (item.title || '').toLowerCase().includes(_deskFilter) ||
+    (item.description || '').toLowerCase().includes(_deskFilter);
+
+  const filteredManual   = manualTasks.filter(matchesSearch);
+  const filteredSessions = sessionCards.filter(matchesSearch);
+
+  // Bucket by status. Manual tasks first (user-owned), then session cards.
   const byStatus = {};
-  for(const c of _DESK_COLS) byStatus[c.id] = [];
-  for(const t of filtered){
+  for(const c of _DESK_COLS) byStatus[c.id] = {manual: [], session: []};
+  for(const t of filteredManual){
     const status = t.status && byStatus[t.status] ? t.status : 'inbox';
-    byStatus[status].push(t);
+    byStatus[status].manual.push(t);
   }
+  for(const c of filteredSessions){
+    const status = byStatus[c.status] ? c.status : 'inbox';
+    byStatus[status].session.push(c);
+  }
+  // Sort each group: high priority first, then newest first.
+  const sortByPrioThenTime = (a, b) => {
+    const pa = a.priority === 'high' ? 0 : (a.priority === 'low' ? 2 : 1);
+    const pb = b.priority === 'high' ? 0 : (b.priority === 'low' ? 2 : 1);
+    if(pa !== pb) return pa - pb;
+    return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt);
+  };
   for(const k of Object.keys(byStatus)){
-    byStatus[k].sort((a, b) => {
-      const pa = a.priority === 'high' ? 0 : (a.priority === 'low' ? 2 : 1);
-      const pb = b.priority === 'high' ? 0 : (b.priority === 'low' ? 2 : 1);
-      if(pa !== pb) return pa - pb;
-      return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt);
-    });
+    byStatus[k].manual.sort(sortByPrioThenTime);
+    byStatus[k].session.sort(sortByPrioThenTime);
   }
 
-  if(!all.length){
+  // Empty state — only when there are zero manual tasks AND zero session cards.
+  if(!manualTasks.length && !sessionCards.length){
     root.innerHTML = `
       <div class="desk-empty">
         <h4>아직 작업이 없습니다</h4>
         <p>위의 <b>+ 새 작업</b> 버튼으로 첫 작업을 만들어 보세요.</p>
         <p style="margin-top:8px;font-size:11px">
         예: <em>"5차시 영어 강의안 작성"</em>, <em>"학생 영작 첨삭 5건"</em>,
-        <em>"이번 주 학습 자료 PR 리뷰"</em>
-        </p>
+        <em>"이번 주 학습 자료 PR 리뷰"</em></p>
+        <p style="margin-top:8px;font-size:10px;opacity:.7">
+        세션이 생기면 자동으로 카드로 등장합니다 (Phase Desk-2).</p>
       </div>`;
     return;
   }
 
-  root.innerHTML = _DESK_COLS.map(c => {
-    const cards = byStatus[c.id] || [];
+  const autoToggle = `
+    <div class="desk-auto-toggle">
+      <label>
+        <input type="checkbox" ${_showAutoSessions ? 'checked' : ''}
+               onchange="toggleAutoSessions()">
+        자동 세션 카드 표시 (${_autoSessionCards.length}개)
+      </label>
+    </div>`;
+
+  root.innerHTML = autoToggle + _DESK_COLS.map(c => {
+    const bucket = byStatus[c.id] || {manual: [], session: []};
+    const total = bucket.manual.length + bucket.session.length;
     return `
       <section class="desk-column" data-status="${c.id}">
         <header class="desk-col-header" style="--col-accent:${c.accent}">
           <span class="desk-col-label">${c.label}</span>
-          <span class="desk-col-count">${cards.length}</span>
+          <span class="desk-col-count">${total}</span>
         </header>
         <div class="desk-col-body">
-          ${cards.length === 0
+          ${total === 0
             ? `<div class="desk-col-empty">비어 있음</div>`
-            : cards.map(t => _renderTaskCard(t)).join('')}
+            : bucket.manual.map(t => _renderTaskCard(t)).join('')
+              + bucket.session.map(c => _renderSessionCard(c)).join('')}
         </div>
       </section>`;
   }).join('');
@@ -238,6 +269,133 @@ function _escDesk(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+}
+
+// ── Phase Desk-2: surface existing Hermes sessions as cards ───────────────
+//
+// Status mapping rules (deterministic, no model call):
+//   - INFLIGHT[sid] active stream → doing  (진행 중)
+//   - pinned + has messages       → review (검토 필요)
+//   - archived                    → done   (완료)
+//   - messages.length === 0       → skipped (empty new session, too noisy)
+//   - other active sessions       → inbox  (예정 — work to return to)
+
+async function loadAutoSessionCards(){
+  if(!_showAutoSessions){
+    _autoSessionCards = [];
+    return;
+  }
+  try{
+    let sessions;
+    // Prefer the cache populated by sessions.js (avoids extra API call)
+    if(typeof _allSessions !== 'undefined' && Array.isArray(_allSessions) && _allSessions.length){
+      sessions = _allSessions;
+    } else if(typeof window.api === 'function'){
+      const data = await window.api('/api/sessions');
+      sessions = data && data.sessions || [];
+    } else {
+      const r = await fetch(new URL('/api/sessions', location.origin).href, {credentials:'include'});
+      const data = await r.json();
+      sessions = data && data.sessions || [];
+    }
+    // Map sessions → status. INFLIGHT is a global from messages.js.
+    const inflight = (typeof INFLIGHT !== 'undefined') ? INFLIGHT : {};
+    _autoSessionCards = sessions
+      .filter(s => s && (s.messages_count > 0 || (Array.isArray(s.messages) && s.messages.length > 0)
+                                              || s.pinned || s.archived))
+      .map(s => {
+        let status = 'inbox';
+        if(inflight[s.session_id])      status = 'doing';
+        else if(s.archived)             status = 'done';
+        else if(s.pinned)               status = 'review';
+        // else default 'inbox'
+        return {
+          _kind: 'session',                          // mark as auto card
+          id: 'session_' + s.session_id,
+          sessionId: s.session_id,
+          title: s.title || 'Untitled',
+          description: '',
+          status,
+          priority: s.pinned ? 'high' : 'normal',
+          createdAt: (s.created_at || 0) * 1000,
+          updatedAt: (s.updated_at || s.created_at || 0) * 1000,
+          messageCount: s.messages_count || (Array.isArray(s.messages) ? s.messages.length : 0),
+          model: s.model || '',
+          profile: s.profile || '',
+        };
+      });
+  }catch(e){
+    console.warn('[desk] auto-surface failed:', e.message);
+    _autoSessionCards = [];
+  }
+}
+
+function toggleAutoSessions(){
+  _showAutoSessions = !_showAutoSessions;
+  if(_showAutoSessions){
+    loadAutoSessionCards().then(() => renderDeskBoard());
+  } else {
+    _autoSessionCards = [];
+    renderDeskBoard();
+  }
+}
+
+// Click a session card → load that session and switch back to chat panel
+function openSessionFromCard(sid, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(typeof window.loadSession === 'function'){
+    window.loadSession(sid);
+  }
+  if(typeof window.switchPanel === 'function'){
+    window.switchPanel('chat');
+  }
+}
+
+// Promote an auto session card into a real task (so the user can edit it,
+// change priority/status freely without touching the underlying session).
+function promoteSessionToTask(sid, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  const card = _autoSessionCards.find(c => c.sessionId === sid);
+  if(!card) return;
+  const list = _loadDeskTasks();
+  // Avoid duplicate promotion
+  if(list.find(t => t.sessionId === sid)){
+    if(typeof window.showToast === 'function') window.showToast('이미 task 로 등록됨');
+    return;
+  }
+  list.unshift({
+    id:          'task_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4),
+    title:       card.title,
+    description: '세션 #' + sid.slice(0, 8) + ' 에서 promote — 메시지 ' + card.messageCount + '개',
+    status:      card.status,
+    priority:    card.priority,
+    sessionId:   sid,
+    createdAt:   Date.now(),
+    updatedAt:   null,
+  });
+  _saveDeskTasks(list);
+  renderDeskBoard();
+  if(typeof window.showToast === 'function') window.showToast('Task 로 등록됨 — 자유롭게 편집 가능');
+}
+
+function _renderSessionCard(c){
+  const isInflight = c.status === 'doing';
+  const modelLabel = c.model ? c.model.split('/').pop() : '';
+  return `
+    <div class="desk-card desk-session-card ${isInflight ? 'inflight' : ''}"
+         onclick="openSessionFromCard('${c.sessionId}')"
+         title="클릭하여 세션 열기">
+      <div class="desk-card-header">
+        <span class="desk-session-marker" title="자동 surface된 세션 카드">↻</span>
+        <div class="desk-card-title">${_escDesk(c.title)}</div>
+        <button class="desk-card-promote" onclick="promoteSessionToTask('${c.sessionId}', event)"
+                title="Task 로 등록하여 자유롭게 편집">↑</button>
+      </div>
+      <div class="desk-card-meta">
+        <span>${c.messageCount > 0 ? c.messageCount + '개 메시지' : '빈 세션'}${modelLabel ? ' · ' + _escDesk(modelLabel) : ''}</span>
+        <span>${_formatTaskTime(c.updatedAt || c.createdAt)}</span>
+      </div>
+    </div>`;
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -277,3 +435,8 @@ window.deleteDeskTask        = deleteDeskTask;
 window.toggleDeskTaskExpand  = toggleDeskTaskExpand;
 window.filterDeskTasks       = filterDeskTasks;
 window.renderDeskBoard       = renderDeskBoard;
+// Phase Desk-2 — session auto-surface
+window.loadAutoSessionCards  = loadAutoSessionCards;
+window.toggleAutoSessions    = toggleAutoSessions;
+window.openSessionFromCard   = openSessionFromCard;
+window.promoteSessionToTask  = promoteSessionToTask;
