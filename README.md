@@ -369,6 +369,69 @@ README 상단 배지에도 같은 링크가 있습니다.
 
 ==================================================
 
+## 성공 지표
+
+이 fork 가 "잘 되고 있다" 를 어떻게 알 것인가. [App-Factory audit (2026-05-12)](docs/audits/app-factory-2026-05-12.md) 권장에 따라 정량 가이드라인을 명시합니다.
+
+### North Star
+
+> **Weekly Active Workspace Users × ≥1 Artifact 생성**
+
+- *Volume*: 주간 활성 워크스페이스(주 1회 이상 세션 시작) 수
+- *Quality multiplier*: 그 중 *≥1 산출물(아티팩트) 생성한 비율*
+- 단순 채팅 횟수 대신 **실제 작업 결과물**을 측정
+
+### 활성화 KPI
+
+| KPI | 목표 | 측정 방법 |
+|-----|------|----------|
+| Setup Pack 무보조 완수율 | ≥60% | N=5 testers · README 도움 없이 Obsidian Starter 완수 |
+| 첫 산출물까지 시간 (TTV) | ≤90 초 | 새 세션 시작 → 첫 자동 추출 산출물 누적까지 |
+| Week-1 retention | ≥30% | 첫 사용 후 7 일 내 재방문율 |
+| 평균 산출물 / 세션 | ≥1 | 세션당 누적되는 산출물 수 |
+
+### PDCA 워크플로우 정량 게이트
+
+위의 [bkit / PDCA 섹션](#bkit--pdca-workflow-지원) EdTech 예시에 측정 게이트 추가:
+
+| Phase | 측정 | 합격 임계값 |
+|-------|------|-----------|
+| Plan | Setup Pack 완수 시간 | ≤ 5 분 |
+| Do | 응답 + 산출물 자동 추출 성공률 | ≥ 80% |
+| Check | Preflight 통과율 | 100% |
+| Act | revision 생성 vs 새 산출물 비율 | ≥ 1 : 1 (편집 활성도) |
+| **Report** | 5차시 강의안 template 일관성 | **≥ 90% same-template usage** |
+
+### 위험 (Risk Register, 간이판)
+
+| 위험 | Trigger | Mitigation | Owner |
+|------|---------|-----------|-------|
+| Upstream Hermes `/api/memory` 스키마 변경 | hermes-agent main 의 memory route 변경 commit | 본 fork 의 `/api/memory` 호출에 schema 버전 핀 + fallback (memory 없이도 UI 동작) | maintainer |
+| GPT API 쿼터 고갈 | 사용자 BYO-key 한도 도달 | 응답에서 rate-limit 감지 시 명확한 fallback 안내 + Darwin 로컬 전환 안내 | maintainer |
+| Setup Pack 중간 실패 | 외부 도구(Obsidian/Telegram) 미설치 | Preflight 가 사전 차단, 실패 시 부분 진행 상태 보존 + 사용자 알림 | maintainer |
+| 테마 호불호 (Cherry Blossom 기본) | 사용자 피드백 / 분기 fork | 첫 실행 시 테마 선택 모달 (UI Phase C 후속) | maintainer |
+
+### 솔로 + BYO-Key + Self-Host (팀·예산 모델)
+
+- **빌더**: solo maintainer
+- **인프라**: BYO-key (사용자가 직접 GPT/Anthropic 키 등록, 본인 API 비용 부담)
+- **호스팅**: self-host (`./start.sh`), SaaS 없음
+- **Setup Pack 비용**: 로컬(Darwin) = 무료, 원격(GPT/Anthropic) = 사용자 키 한도
+
+### 측정 인프라 (TODO)
+
+현재 fork 에 사용량 측정 인프라가 없습니다. 위 지표를 측정하려면 *최소 3 가지 instrumentation* 이 필요:
+
+1. 세션 시작 / 산출물 생성 / Setup Pack 실행 카운터 (localStorage 또는 backend)
+2. TTV 측정 (세션 시작 timestamp ↔ 첫 산출물 timestamp)
+3. 외부 분석 도구 *없이* 익명 집계 (사용자 프라이버시 보호)
+
+이는 향후 작업 항목 — 현재 README 의 지표는 **지향 목표**로 받아주세요.
+
+> *이 섹션은 App-Factory `audit-spec` 의 G5 + G3 + G4 + G1 권장 (Top fix priorities)을 반영한 것입니다. 전체 audit 결과는 [docs/audits/app-factory-2026-05-12.md](docs/audits/app-factory-2026-05-12.md) 참고.*
+
+==================================================
+
 ## bkit / PDCA Workflow 지원
 
 Hermes for Web 은 **App Factory + bkit** 의 *PDCA 사이클* 과 *Next Best Move* 패턴을 자연스럽게 지원하도록 설계되어 있습니다. 즉, "아이디어 → 실행 → 점검 → 다음 한 걸음" 의 루프를 UI 위에서 그대로 따라갈 수 있습니다.
