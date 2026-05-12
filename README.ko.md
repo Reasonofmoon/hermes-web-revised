@@ -367,6 +367,19 @@ README 상단 배지에도 같은 링크가 있습니다.
 
 ==================================================
 
+## 성공 지표
+
+본 fork 가 잘 되고 있다는 판단 기준 (App-Factory audit 권장 반영).
+
+- **North Star**: Weekly Active Workspace Users × ≥1 Artifact 생성
+- **활성화 KPI**: Setup Pack 무보조 완수율 ≥60% · TTV ≤90초 · Week-1 retention ≥30%
+- **솔로 + BYO-key + self-host** 모델 (사용자가 GPT/Anthropic 키 직접 등록, 비용 직접 부담)
+- **위험표**: upstream /api/memory 변경 · GPT 쿼터 · Setup Pack 부분실패 · 테마 호불호 → 각각 mitigation 명시
+
+전체 지표 + PDCA 정량 게이트 + 위험 매트릭스: [README.md 의 성공 지표 섹션](README.md#성공-지표) 및 [docs/audits/app-factory-2026-05-12.md](docs/audits/app-factory-2026-05-12.md) 참고.
+
+==================================================
+
 ## bkit / PDCA Workflow 지원
 
 Hermes for Web 은 **App Factory + bkit** 의 *PDCA 사이클* 과 *Next Best Move* 패턴을 자연스럽게 지원하도록 설계되어 있습니다. 즉, "아이디어 → 실행 → 점검 → 다음 한 걸음" 의 루프를 UI 위에서 그대로 따라갈 수 있습니다.

@@ -1,0 +1,672 @@
+{
+  "envelope_id": "880c8619-bd3e-4106-834d-06e984ebcb64",
+  "schema_version": "factory.v3",
+  "module": {
+    "id": "spec-audit",
+    "version": "1.0.0",
+    "hash": "a85062b888ea391c5d775c04e5cad02a40958c534fe557786511bb48f4512278"
+  },
+  "model": {
+    "provider": "anthropic",
+    "id": "claude-sonnet-4-20250514",
+    "params": {
+      "temperature": 0.3
+    }
+  },
+  "input": {
+    "hash": "195c425818541c9bd4ecf2c09953bb3b1c25018d96a8074110f98a991024dcc3",
+    "payload": {
+      "spec_text": "# Hermes for Web\r\n\r\n[![Private Repo Ready](https://img.shields.io/badge/release-private%20repo%20ready-f4a6c1?style=for-the-badge)](https://github.com/reallygood83/hermes-for-web)\r\n[![기본 테마](https://img.shields.io/badge/theme-%EB%B2%9A%EA%BD%83-ffb7d5?style=for-the-badge)](#테마--개인화)\r\n[![Setup Packs](https://img.shields.io/badge/workflows-setup%20packs-9ec5ff?style=for-the-badge)](#setup-packs)\r\n[![YouTube](https://img.shields.io/badge/YouTube-배움의%20달인-ff4b5c?style=for-the-badge&logo=youtube)](https://www.youtube.com/@%EB%B0%B0%EC%9B%80%EC%9D%98%EB%8B%AC%EC%9D%B8-p5v)\r\n[![X](https://img.shields.io/badge/X-@reallygood83-111111?style=for-the-badge&logo=x)](https://x.com/reallygood83)\r\n\r\n영문 안내: [README.en.md](README.en.md)\r\n\r\nHermes for Web 은 Hermes Agent 를 위한 브라우저 작업실입니다.\r\n\r\n쉽게 비유하면:\r\n- Hermes CLI 가 엔진룸이라면, Hermes for Web 은 조종석입니다.\r\n- 텔레그램 구찌가 무전기라면, Hermes for Web 은 관제탑입니다.\r\n- Obsidian 이 책장이라면, Hermes for Web 은 책상입니다.\r\n\r\n즉, 그냥 “AI와 대화하는 웹페이지”가 아니라,\r\n작업을 만들고, 점검하고, 저장하고, 이어서 공유하는 작업 공간에 가깝습니다.\r\n\r\n이 포크의 핵심 방향은 다음과 같습니다.\r\n- 한국어 친화 UI\r\n- 초보자도 바로 쓰기 쉬운 워크플로우 버튼\r\n- 각 사용자 Hermes memory 를 읽는 개인화 시작 화면\r\n- Darwin 같은 로컬 모델과 GPT 계열 원격 모델의 공존\r\n- WebUI 안에서 아티팩트 생성/관리\r\n- Obsidian / ShareNote / Telegram 흐름을 빠르게 붙일 수 있는 Setup Packs\r\n\r\n==================================================\r\n\r\n## 이 프로젝트가 지향하는 것\r\n\r\n보통 AI 웹 UI 는 채팅창 + 모델 선택기 정도에서 끝나는 경우가 많습니다.\r\nHermes for Web 은 그보다 한 걸음 더 나아가려고 합니다.\r\n\r\n이 UI 로 하고 싶은 것:\r\n- Hermes 와 대화하기\r\n- 노트/브리프/메모 같은 결과물 만들기\r\n- 자주 쓰는 환경을 원클릭으로 세팅하기\r\n- 실행 전에 품질을 간단 점검하기\r\n- 사용자의 기억을 읽어 점점 자기화된 작업실로 만들기\r\n\r\n한 문장으로 말하면:\r\n이건 “질문하고 답받는 UI”보다,\r\n“내 작업 방식을 점점 배워가는 AI 작업실”에 더 가깝습니다.\r\n\r\n==================================================\r\n\r\n## 누가 쓰면 좋은가\r\n\r\n이런 분들께 특히 잘 맞습니다.\r\n- Hermes CLI 를 이미 쓰는데 더 보기 쉬운 웹 UI 가 필요한 사람\r\n- Obsidian 중심으로 일하는 사람\r\n- 텔레그램/CLI/WebUI 를 오가며 같은 AI를 쓰고 싶은 사람\r\n- 리서치, 글쓰기, 노트 작성, 자동화까지 한곳에서 하고 싶은 사람\r\n- 로컬 모델(Darwin 등)과 원격 모델(GPT 계열)을 함께 쓰고 싶은 사람\r\n\r\n==================================================\r\n\r\n## 핵심 개념 5가지\r\n\r\n### 1. Personalization from Hermes memory\r\n\r\n이 포크는 사용자의 Hermes memory 와 user profile 을 읽어서 시작 화면을 조금씩 개인화합니다.\r\n\r\n비유하면:\r\n- 일반 챗봇 UI 는 카페에서 처음 보는 손님을 대하듯 모두에게 똑같이 반응합니다.\r\n- Hermes for Web 은 단골 손님을 알아보는 카페처럼, 사용자의 기억을 바탕으로 더 자연스럽게 시작하려고 합니다.\r\n\r\n현재 방향:\r\n- `/api/memory` 를 읽음\r\n- 홈 화면에 개인화 카드 표시\r\n- 사용자 기억이 있으면 그 내용을 바탕으로 “이 작업실은 당신에 맞게 커질 수 있다”는 경험 제공\r\n\r\n즉, 특정 한 사람 전용 UI 가 아니라,\r\n각 사용자의 Hermes memory 를 읽어 각자에게 맞게 반응하는 범용 UI 를 지향합니다.\r\n\r\n### 2. Cherry Blossom 기본 테마\r\n\r\n이 포크의 기본 테마는 벚꽃(Cherry Blossom)입니다.\r\n\r\n왜냐하면 첫 화면의 인상은 제품의 악수와 같기 때문입니다.\r\n처음 열었을 때 차갑고 딱딱한 느낌보다,\r\n부드럽고 기억에 남는 감성을 주는 편이 좋다고 판단했습니다.\r\n\r\n현재 포함된 테마:\r\n- Cherry Blossom (기본값)\r\n- Neo Brutalism\r\n- Gucci style\r\n\r\n추가 요소:\r\n- 벚꽃 꽃잎 애니메이션\r\n- 헤더/사이드바 주변 sakura 장식 이미지\r\n\r\n### 3. Setup Packs\r\n\r\nSetup Pack 은 “설치/설정 레시피 카드”입니다.\r\n\r\n보통은 사용자가 이렇게 해야 합니다:\r\n- 이 도구 설치하고\r\n- 저 설정 확인하고\r\n- 이 플러그인 켜고\r\n- 이 명령어 기억해두고\r\n- 최종적으로 어떤 흐름으로 쓰는지 익혀야 함\r\n\r\nSetup Pack 은 이걸 줄여줍니다.\r\n즉,\r\n“무슨 걸 설치해야 하지?”를 줄이고,\r\n“이 버튼 누르면 Hermes 가 환경을 점검하고 세팅을 도와주는” 방향으로 갑니다.\r\n\r\n현재 포함된 팩:\r\n- Obsidian Starter Pack\r\n- ShareNote + Telegram Pack\r\n- Obsidian Power Workflow\r\n- Memory Sync Pack\r\n\r\n### 4. Artifacts\r\n\r\nArtifacts 는 결과물입니다.\r\n\r\n쉽게 말해:\r\n채팅이 말이라면,\r\nartifact 는 남는 작업물입니다.\r\n\r\n예:\r\n- note\r\n- posting brief\r\n- brief\r\n- memo\r\n- research brief\r\n\r\n이 UI 에서는 아티팩트를:\r\n- 만들고\r\n- 열고\r\n- 삭제하고\r\n- Share / Telegram / Memory 액션과 연결할 수 있습니다.\r\n\r\n즉 “대화”를 “파일”과 “결과물”로 바꾸는 층입니다.\r\n\r\n### 5. Preflight Validator\r\n\r\nPreflight 는 비행기 이륙 전 체크리스트 같은 기능입니다.\r\n\r\n작업을 실행하기 전에,\r\n“이 상태로 하면 너무 허술하지 않은가?”를 가볍게 점검합니다.\r\n\r\n현재 점검 대상:\r\n- note\r\n- posting\r\n- cron\r\n\r\n이건 아직 가벼운 MVP 이지만,\r\n사용자 입장에선 “실행해보고 망하는 것”보다,\r\n“실행 전에 한번 점검받는 것”이 훨씬 편합니다.\r\n\r\n==================================================\r\n\r\n## 주요 기능 요약\r\n\r\n### 채팅 + 모델 오케스트레이션\r\n- Darwin 같은 로컬 모델 사용 가능\r\n- GPT-5.4 / GPT-5.4 Mini / Codex 계열 사용 가능\r\n- 세션 단위 모델 전환\r\n- 로컬 모델과 원격 모델을 함께 쓰는 구조\r\n\r\n### Workspace 패널\r\n- 현재 세션의 작업 파일 탐색\r\n- markdown / code / image 미리보기\r\n- 파일/폴더 생성\r\n- 결과물을 실제 파일처럼 다루기\r\n\r\n### Artifact 워크플로우\r\n- artifact shelf\r\n- 아티팩트 생성 모달\r\n- 생성 / 열기 / 삭제\r\n- AI 후속 보조\r\n- 아티팩트에서 바로:\r\n  - Share\r\n  - Telegram\r\n  - Memory\r\n로 연결 가능\r\n\r\n### Setup Packs\r\n- 자주 쓰는 workflow 를 원클릭 bootstrap\r\n- 실행 이력 표시\r\n- 재실행 / 상태 변경 가능\r\n\r\n### Preflight Validator\r\n- note check\r\n- posting check\r\n- cron check\r\n- 실행 전 간단한 readiness 점검\r\n\r\n### UX / 브랜딩\r\n- 한국어 중심 UI\r\n- 벚꽃 기본 테마\r\n- 벚꽃 장식 / 꽃잎 애니메이션\r\n- 파비콘\r\n- 사이드바 중심 tool organization\r\n\r\n==================================================\r\n\r\n## 화면을 한 줄씩 이해하기\r\n\r\n- 메인 채팅: Hermes 와 생각을 정리하는 공간\r\n- 사이드바 도구 패널: 기능을 관리하는 서랍장\r\n- Workspace: 실제 파일과 결과물을 보는 작업대\r\n- Artifact shelf: 대화를 결과물로 바꾸는 선반\r\n- Setup Packs: 설치/설정을 쉽게 시작하는 레시피 카드\r\n- Preflight: 실행 전 “한 번 보고 가자” 체크리스트\r\n\r\n==================================================\r\n\r\n## 빠른 시작\r\n\r\n### 전제조건\r\n먼저 Hermes Agent 가 설치되어 있어야 합니다.\r\n\r\n### 로컬에서 바로 실행\r\n\r\n```bash\r\ngit clone https://github.com/reallygood83/hermes-for-web.git\r\ncd hermes-for-web\r\n./start.sh 8788\r\n```\r\n\r\n그 다음 브라우저에서:\r\n\r\n```text\r\nhttp://localhost:8788\r\n```\r\n\r\n### 설치 철학\r\n이 프로젝트는 사용자를 “설명서와 씨름하게” 만들기보다,\r\n“이미 준비된 작업실에 들어가게” 만들고 싶습니다.\r\n\r\n그래서 기본 원칙은:\r\n- 가능한 자동 탐지\r\n- 기존 Hermes memory / config 재사용\r\n- 조용히 시스템을 바꾸기보다 guided flow 제공\r\n- Setup Pack 으로 환경 부팅 보조\r\n\r\n즉 “부품 상자”보다 “정리된 책상”에 가깝게 만드는 것이 목표입니다.\r\n\r\n==================================================\r\n\r\n## Setup Packs 설명\r\n\r\n### Obsidian Starter Pack\r\nObsidian 중심으로 시작하고 싶은 사람용입니다.\r\n\r\n주요 목표:\r\n- vault 확인\r\n- note 작성 흐름 점검\r\n- Obsidian 친화 markdown workflow 확인\r\n\r\n### ShareNote + Telegram Pack\r\n노트를 만들고,\r\n공유 링크를 만들고,\r\n텔레그램까지 이어지는 흐름을 점검하고 싶은 사람용입니다.\r\n\r\n주요 목표:\r\n- ShareNote 플러그인/흐름 확인\r\n- 공유 링크 생성 흐름 점검\r\n- Telegram handoff 흐름 정리\r\n\r\n### Obsidian Power Workflow\r\n다음을 한 번에 엮고 싶은 사람용입니다.\r\n- note\r\n- posting\r\n- ShareNote\r\n- Telegram handoff\r\n\r\n### Memory Sync Pack\r\nCLI / WebUI / Telegram 간의 감각적인 연결을 강화하고 싶은 사람용입니다.\r\n\r\n==================================================\r\n\r\n## Artifacts 사용법\r\n\r\nArtifacts 는 채팅을 작업물로 바꾸는 기능입니다.\r\n\r\n### 생성\r\n아티팩트 모달에서 만들 수 있는 유형:\r\n- Note\r\n- Posting Brief\r\n- Brief\r\n- Memo\r\n- Research Brief\r\n\r\n### AI 보조\r\n“AI 도움 프롬프트도 함께 준비”를 체크하면,\r\n파일 생성 직후 Hermes 가 그 아티팩트를 더 다듬을 수 있도록 입력창에 적절한 프롬프트를 넣어줍니다.\r\n\r\n### 관리\r\n생성된 아티팩트는:\r\n- 열기\r\n- 삭제\r\n- Share\r\n- Telegram\r\n- Memory\r\n액션으로 이어집니다.\r\n\r\n즉 아티팩트는 단순 파일이 아니라,\r\n다음 workflow 로 연결되는 발판입니다.\r\n\r\n==================================================\r\n\r\n## Preflight Validator 설명\r\n\r\nPreflight 는 “하기 전에 한번 보는 기능”입니다.\r\n\r\n예를 들면:\r\n- note 만들기 전에 note 구조가 괜찮은지\r\n- posting 전에 핵심 메시지가 있는지\r\n- cron 전에 schedule 과 prompt 가 너무 비어있지 않은지\r\n\r\n이건 아직 가벼운 버전이지만,\r\n사용자가 실수하기 전에 경고해주는 안전장치 역할을 합니다.\r\n\r\n==================================================\r\n\r\n## 사이드바 구조를 왜 바꿨나\r\n\r\n초기에는 메인 화면에 카드가 너무 많이 쌓여서 복잡해졌습니다.\r\n그건 마치 작업 책상 위에 모든 도구를 한꺼번에 늘어놓은 것과 비슷합니다.\r\n\r\n그래서 지금은\r\n- 아티팩트\r\n- 설치팩\r\n- 점검\r\n같은 관리 기능을 사이드바 중심으로 옮겼습니다.\r\n\r\n덕분에:\r\n- 메인 화면은 더 깔끔해지고\r\n- 필요한 도구는 왼쪽에서 바로 꺼내 쓰는 구조가 됐습니다.\r\n\r\n==================================================\r\n\r\n## 소셜 링크\r\n\r\n이 포크를 만든 사람의 작업 맥락을 보고 싶다면:\r\n- YouTube: https://www.youtube.com/@%EB%B0%B0%EC%9B%80%EC%9D%98%EB%8B%AC%EC%9D%B8-p5v\r\n- X: https://x.com/reallygood83\r\n\r\nREADME 상단 배지에도 같은 링크가 있습니다.\r\n\r\n==================================================\r\n\r\n## Private repo 업로드 전 체크 포인트\r\n\r\n추천 저장소:\r\n- https://github.com/reallygood83/hermes-for-web\r\n\r\n처음엔 private 으로 올리고,\r\n그 다음 깨끗한 머신에서 검증 후 공개 여부를 결정하는 게 좋습니다.\r\n\r\n검증 추천 항목:\r\n- Darwin 이 WebUI 에서 정상 응답하는지\r\n- GPT 계열 모델도 정상 응답하는지\r\n- Cherry Blossom 이 기본값인지\r\n- memory 가 있을 때 personalization 카드가 잘 뜨는지\r\n- memory 가 없어도 UI 가 깨지지 않는지\r\n- Setup Packs 가 실행되는지\r\n- Artifact 생성/열기/삭제가 되는지\r\n- 사이드바 패널이 자연스럽게 렌더링되는지\r\n\r\n이건 “내 컴퓨터에서는 되는데 남한테는 안 되는” 상황을 줄이기 위한 과정입니다.\r\n\r\n==================================================\r\n\r\n## bkit / PDCA Workflow 지원\r\n\r\nHermes for Web 은 **App Factory + bkit** 의 *PDCA 사이클* 과 *Next Best Move* 패턴을 자연스럽게 지원하도록 설계되어 있습니다. 즉, \"아이디어 → 실행 → 점검 → 다음 한 걸음\" 의 루프를 UI 위에서 그대로 따라갈 수 있습니다.\r\n\r\n이 섹션은 *왜 hermes-for-web 이 단순 챗 UI 보다 워크플로우 도구에 가까운가* 를 한눈에 보여 줍니다.\r\n\r\n### PDCA 사이클 매핑\r\n\r\nbkit 의 5 단계 사이클이 Hermes for Web 의 어느 기능에 대응되는지:\r\n\r\n| bkit Phase | 의미 | Hermes for Web 에서 |\r\n|-----------|------|---------------------|\r\n| **Plan** | 스펙 · 범위 · acceptance criteria 정의 | Setup Packs · Preflight Validator · 새 세션 (workspace 결정) |\r\n| **Do** | 가장 작은 유용한 변경 또는 결과물 | 원클릭 워크플로우 버튼 · Hermes 응답 스트림 · 아티팩트 자동 생성 |\r\n| **Check** | 검증 · 테스트 · 리뷰 | Preflight 점검 · 워크스페이스 git status · 사용자 직접 검토 |\r\n| **Act** | 통합 · 문서 갱신 · 다음 슬라이스 선택 | 아티팩트 편집/revision · 메모리 저장 · 텔레그램 핸드오프 |\r\n| **Report** | 결과 + 다음 best move 요약 | Hermes 응답 footer · 세션 export · ShareNote 공유 |\r\n\r\n### Next Best Move 패턴\r\n\r\nbkit 의 핵심은 *모든 응답이 다음 한 걸음을 제안하는 것* 입니다:\r\n\r\n```text\r\nNext best move: <one concrete action>\r\nReason: <왜 이게 가장 high-leverage 인가>\r\nGate: <scope|quality|security|docs|release>\r\nAutomation: <manual|guided|semi_auto|auto>\r\nRisk: <low|medium|high>\r\n```\r\n\r\nHermes 응답에 이 footer 를 요청하면 자동으로 만들어집니다.\r\n\r\n예시 프롬프트:\r\n> \"지금부터 모든 응답 마지막에 bkit 형식의 Next best move 를 붙여줘.\"\r\n\r\n### 자동화 레벨\r\n\r\n| 레벨 | 의미 | hermes-for-web 어디서 |\r\n|------|------|---------------------|\r\n| `manual` | 모든 동작 승인 필요 | 위험 명령 (terminal 도구의 approval gate) |\r\n| `guided` | 읽기 · 검토 자유, 쓰기 전 승인 | 파일 작업 · git operation |\r\n| `semi_auto` | 비파괴 + 범위 한정 편집 자동 | 아티팩트 추출 · 메모리 갱신 · 모델 응답 |\r\n| `auto` | 사전 승인된 워크플로우 | Cron 작업 · Setup Pack 실행 |\r\n\r\n기본값: 일반 채팅은 `semi_auto`, 파일 변경 / git 푸시 / 외부 발송은 `guided` 로 동작합니다.\r\n\r\n### Quality Gates\r\n\r\n변경이 어느 게이트를 통과했는지 명시 (응답에 포함 또는 PR 본문에):\r\n\r\n- `scope` — 영향 범위 + acceptance criteria 이해\r\n- `quality` — 검증 완료 또는 그게 다음 action\r\n- `security` — 위험 · 시크릿 · 외부 효과 검토\r\n- `docs` — 문서 · 플랜 · 구현 동기화\r\n- `release` — 발행 전 광범위 검증\r\n\r\n### bkit 스킬 설치\r\n\r\n이 레포에 포함된 스킬 패키지를 풀어서 글로벌 사용:\r\n\r\n```bash\r\n# Claude Code (Windows)\r\nExpand-Archive docs/skill-packages/app-factory-bkit.zip -DestinationPath $env:USERPROFILE/.claude/skills/\r\n\r\n# Claude Code (macOS/Linux)\r\nunzip docs/skill-packages/app-factory-bkit.zip -d ~/.claude/skills/\r\n\r\n# Codex\r\nunzip docs/skill-packages/app-factory-bkit.zip -d ~/.codex/skills/\r\n\r\n# Hermes CLI\r\nunzip docs/skill-packages/app-factory-bkit.zip -d ~/.hermes/skills/\r\n```\r\n\r\n설치 후 \"PDCA\", \"next best move\", \"quality gate\" 같은 자연어 트리거로 자동 활성화. Claude Code 에서는 `/app-factory-bkit` 슬래시 명령으로도 호출 가능.\r\n\r\n### 더 깊이 알기\r\n\r\n| 문서 | 내용 |\r\n|------|------|\r\n| [`docs/skill-packages/app-factory-bkit.zip`](docs/skill-packages/app-factory-bkit.zip) | 스킬 패키지 (SKILL.md + 3개 reference) |\r\n| `SKILL.md` (zip 안) | 5 단계 PDCA · Next Best Move 스키마 · 자동화 가이드 |\r\n| `references/bkit.md` | PDCA · automation levels · quality gates · hooks · agent teams |\r\n| `references/app-factory.md` | module manifest · envelope · catalog · provenance |\r\n| `references/hermes-adaptation.md` | Hermes 매핑 (tool schema → manifest, session DB → envelope 등) |\r\n\r\n### EdTech 워크플로우 예시 (영어 학습 콘텐츠 제작 기준)\r\n\r\n```text\r\n[Plan]   Setup Pack \"Obsidian Starter\" 실행 → vault 경로 확정\r\n[Do]     원클릭 워크플로우 \"노트 생성\" → Hermes 가 5차시 강의안 초안 작성\r\n[Check]  아티팩트 패널에서 slides 렌더로 페이지별 확인 + Preflight 점검\r\n[Act]    인라인 편집으로 1차시 수정 → revision 저장 → 메모리에 학습자 프로필 업데이트\r\n[Report] ShareNote 노트 생성 → 텔레그램 핸드오프로 학생에게 공유\r\n\r\nNext best move: 2차시 워크북 만들기 (\"아티팩트 빠른 실행\" → \"포스팅 브리프 생성\")\r\nReason: 강의안 차시별 출력 일관성 확보가 다음 quality gate\r\nGate: scope\r\nAutomation: semi_auto\r\nRisk: low\r\n```\r\n\r\n이런 흐름이 *AI 채팅 UI* 보다 *작업실* 에 가까운 이유입니다.\r\n\r\n==================================================\r\n\r\n## 추천 다음 단계\r\n\r\nprivate repo 올린 뒤에는 이렇게 가는 걸 추천합니다.\r\n\r\n1. private repo push\r\n2. 다른 Hermes 사용자 1명 이상에게 테스트 받아보기\r\n3. Setup Packs / Artifact / Preflight 중 어디가 헷갈렸는지 확인\r\n4. README 와 첫 화면 copy 를 더 쉽게 다듬기\r\n5. 그 다음 공개 전환 검토\r\n\r\n좋은 제품은 설명을 덜 필요로 합니다.\r\n훌륭한 제품은 사용자가 “원래 이랬어야 하는데?”라고 느끼게 만듭니다.\r\n이 포크는 그 방향을 목표로 합니다.\r\n\r\n==================================================\r\n\r\n## 라이선스 / 업스트림 메모\r\n\r\n이 저장소는 Hermes WebUI 기반의 workflow-focused fork 입니다.\r\n나중에 public 으로 열 경우,\r\n업스트림 크레딧과 포크에서 추가한 기능을 명확히 적는 것을 권장합니다.\r\n",
+      "tier": "T2",
+      "commands_dir": "F:\\dev\\app-factory\\packages\\cli\\src\\commands",
+      "known_cli_flags": [
+        "--action",
+        "--allow-blockers",
+        "--anchor",
+        "--app-dir",
+        "--artifact-preview-chars",
+        "--auto",
+        "--color-text-on-accent",
+        "--commands-dir",
+        "--compact",
+        "--context",
+        "--critique",
+        "--critique-each",
+        "--dataset",
+        "--deep",
+        "--deep-model",
+        "--deep-verbose",
+        "--depth",
+        "--domain",
+        "--dry-run",
+        "--emit-dir",
+        "--envelope",
+        "--extras-file",
+        "--fail-fast",
+        "--feature-focus",
+        "--field",
+        "--focus",
+        "--force",
+        "--from-recs",
+        "--from-repo",
+        "--goal",
+        "--harness",
+        "--harness-dir",
+        "--history",
+        "--idea",
+        "--implement-dir",
+        "--in",
+        "--include-full",
+        "--input",
+        "--json",
+        "--markdown",
+        "--model",
+        "--modules",
+        "--name",
+        "--no-cache",
+        "--no-critique",
+        "--no-personas",
+        "--notion",
+        "--notion-page",
+        "--notion-token",
+        "--out",
+        "--out-dir",
+        "--out-name",
+        "--panel",
+        "--parent",
+        "--persona",
+        "--plan-name",
+        "--raw",
+        "--repo",
+        "--report-name",
+        "--resume-from",
+        "--run-dir",
+        "--scenario",
+        "--skill-dir",
+        "--spec",
+        "--strict",
+        "--summary-chars",
+        "--sync-readme",
+        "--target",
+        "--target-repo",
+        "--test",
+        "--tier",
+        "--verbose"
+      ],
+      "personas_enabled": false
+    }
+  },
+  "output": {
+    "hash": "914d2f9824b0e80fe875db1d45eaad8978ca64daa795b06892a4da6bd1e90c3c",
+    "payload": {
+      "rubric": [
+        {
+          "id": "R01",
+          "name": "timeline_realism",
+          "score": 6.5,
+          "verdict": "b",
+          "evidence_refs": [
+            "Spec contains zero `## Phase N` / `### Phase N` blocks. No week or day estimates anywhere.",
+            "§추천 다음 단계 lists 5 ordered steps (private push → test → polish → public) but no time bounds.",
+            "§빠른 시작 gives `./start.sh 8788` — no schedule for build/launch."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "No timeline/roadmap. Rubric cannot detect impossible scope but also cannot detect realistic pacing.",
+              "fix_hint": "Add lightweight roadmap: weeks-to-public, weeks-per-Setup-Pack, Preflight v2 ETA."
+            }
+          ],
+          "fix_hints": [
+            "Roadmap table with 4–6 week buckets per pillar (Setup Packs, Artifacts, Preflight)."
+          ]
+        },
+        {
+          "id": "R02",
+          "name": "assumption_evidence",
+          "score": 6.5,
+          "verdict": "b",
+          "evidence_refs": [
+            "No ₩/$/% claims. Spec is descriptive prose, not analytical.",
+            "Personalization claim ('단골 손님을 알아보는 카페처럼') — no source, but no number either.",
+            "No 'assumptions to verify' table."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "Qualitative claims ('초보자도 바로 쓰기 쉬운', '한 걸음 더 나아가려고') unverified — no interview count, no usability evidence.",
+              "fix_hint": "Add SPEC-GAP table: assumed user reactions + how to verify (N=5 tests)."
+            }
+          ],
+          "fix_hints": [
+            "Cite ≥3 user interviews or comparable WebUI usability benchmarks."
+          ]
+        },
+        {
+          "id": "R03",
+          "name": "team_budget_clarity",
+          "score": 4,
+          "verdict": "c",
+          "evidence_refs": [
+            "Zero matches for: solo / team / engineers / funding / runway / 자금 / 예산 / 인건비 / headcount.",
+            "Spec is README — no Team/Resources section.",
+            "No hosting or LLM-call cost discussion (Darwin local + GPT remote both implied)."
+          ],
+          "issues": [
+            {
+              "severity": "major",
+              "finding": "No team size or builder mentioned. No budget for LLM API tokens (GPT-5.4) or hosting.",
+              "fix_hint": "State: solo maintainer, BYO-key model (user pays own GPT bill), self-hosted via start.sh."
+            },
+            {
+              "severity": "minor",
+              "finding": "Setup Pack execution costs unaddressed — what's free vs paid per pack?",
+              "fix_hint": "Per-pack cost note (free if Darwin local, $X/mo if GPT remote)."
+            }
+          ],
+          "fix_hints": [
+            "Add 'Who builds / who pays' line: solo + BYO-key + self-host."
+          ]
+        },
+        {
+          "id": "R04",
+          "name": "competitive_depth",
+          "score": 4.5,
+          "verdict": "c",
+          "evidence_refs": [
+            "No named competitors. 'AI 웹 UI' / '채팅창 + 모델 선택기' referenced abstractly (no Open WebUI, LibreChat, AnythingLLM, Cursor mentioned).",
+            "Differentiation claim: '질문하고 답받는 UI보다 내 작업 방식을 점점 배워가는 AI 작업실' — no specific moat mechanism.",
+            "No 'What if Open WebUI adds Artifacts?' section."
+          ],
+          "issues": [
+            {
+              "severity": "major",
+              "finding": "No competitor named despite crowded AI-WebUI space (Open WebUI, LibreChat, AnythingLLM, Cursor, Hex). Hermes-memory personalization is the only stated moat — assertion without defensibility.",
+              "fix_hint": "Add §Competitive Landscape: 3 named competitors × (what overlaps, what they could clone, what they cannot)."
+            },
+            {
+              "severity": "minor",
+              "finding": "Hermes-memory dependency is moat-claim but also lock-in risk if upstream Hermes changes /api/memory shape.",
+              "fix_hint": "Note upstream API stability assumption + fallback if memory unavailable."
+            }
+          ],
+          "fix_hints": [
+            "Explicit moat: Hermes memory integration depth + Setup Pack library + Korean-first UX."
+          ]
+        },
+        {
+          "id": "R05",
+          "name": "cli_flag_validity",
+          "score": 9.5,
+          "verdict": "aplus",
+          "evidence_refs": [
+            "Searched code blocks for `--[a-z][a-z0-9-]+` pattern. Hits: `-DestinationPath` (PowerShell Expand-Archive, not Hermes CLI), `-d` (unzip, single-dash).",
+            "No `--` style Hermes/App-Factory CLI flags used in spec.",
+            "`./start.sh 8788` positional arg — no flags.",
+            "Cross-checked against known_cli_flags (75 entries) — no spec usage to validate."
+          ],
+          "issues": [],
+          "fix_hints": []
+        },
+        {
+          "id": "R06",
+          "name": "stage_fit",
+          "score": 7.5,
+          "verdict": "bplus",
+          "evidence_refs": [
+            "Stage signal: 'release-private repo ready' badge + '이건 아직 가벼운 MVP' (Preflight section).",
+            "No SOC 2 / FERPA / GDPR / multi-tenant / marketplace / public API mentioned.",
+            "Infra ask is minimal: start.sh + Hermes Agent prereq.",
+            "Recommended next step (§추천 다음 단계): 'private push → 1 tester → polish' — appropriately small."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "Stage labeled 'private repo ready' but no PMF-validation gate before public. Step 5 ('공개 전환 검토') is vague — no criteria.",
+              "fix_hint": "Add Phase 0 gate: 'public only after N=3 testers complete full PDCA loop without help'."
+            }
+          ],
+          "fix_hints": [
+            "Define public-launch criteria with measurable gate."
+          ]
+        },
+        {
+          "id": "R07",
+          "name": "north_star_quality",
+          "score": 4.5,
+          "verdict": "c",
+          "evidence_refs": [
+            "No 'North Star' / 'key metric' / 'primary metric' string in spec.",
+            "Closest aspiration: '내 작업 방식을 점점 배워가는 AI 작업실' — qualitative, not metric.",
+            "Spec does NOT claim 'world-class' — no blocker trigger."
+          ],
+          "issues": [
+            {
+              "severity": "major",
+              "finding": "No North Star defined. 'Workflow tool, not chat UI' claim has no measurable proxy (e.g. Setup-Packs-run-per-user × Artifacts-created-per-week).",
+              "fix_hint": "Set North Star: weekly active users × Artifacts-created (volume × retention proxy)."
+            }
+          ],
+          "fix_hints": [
+            "Adopt 'Weekly Active Workspace Users with ≥1 Artifact created' as North Star."
+          ]
+        },
+        {
+          "id": "R08",
+          "name": "pricing_evidence",
+          "score": 7,
+          "verdict": "bplus",
+          "evidence_refs": [
+            "No ₩/$ price tiers in spec.",
+            "Implicit pricing model: BYO-key (user pays own GPT bill) + free self-host — stated by omission in §빠른 시작.",
+            "No competitor pricing comparison."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "Monetization model implicit. If fork stays free OSS, state it. If commercial later, no pricing logged for verification.",
+              "fix_hint": "Add 1-line: 'License: open-source / BYO-key / no commercial tier planned' or equivalent."
+            }
+          ],
+          "fix_hints": [
+            "Explicit free/OSS positioning."
+          ]
+        },
+        {
+          "id": "R09",
+          "name": "risk_completeness",
+          "score": 4,
+          "verdict": "c",
+          "evidence_refs": [
+            "No §Risks / §위험 section.",
+            "Indirect risk language: 'memory가 없어도 UI가 깨지지 않는지' (§Private repo 업로드 전 체크 포인트) — verification list, not risk register.",
+            "No triggers, mitigations, owners mapped."
+          ],
+          "issues": [
+            {
+              "severity": "major",
+              "finding": "Zero structured risk treatment. Key unaddressed risks: upstream Hermes /api/memory schema break, GPT-5.4 quota exhaustion, Setup Pack failure leaving partial state, Cherry Blossom theme alienating non-aesthetic users.",
+              "fix_hint": "Add risk table: 4 rows × (trigger, mitigation, owner)."
+            },
+            {
+              "severity": "minor",
+              "finding": "Pre-publication checklist exists but lacks failure-mode handling.",
+              "fix_hint": "For each check item, state what happens on failure (block release vs note-and-proceed)."
+            }
+          ],
+          "fix_hints": [
+            "Add §Risks with ≥4 entries × trigger/mitigation/owner columns."
+          ]
+        },
+        {
+          "id": "R10",
+          "name": "dependency_clarity",
+          "score": 6.5,
+          "verdict": "b",
+          "evidence_refs": [
+            "Explicit prerequisite: '먼저 Hermes Agent 가 설치되어 있어야 합니다.' (§전제조건).",
+            "No phases → no inter-phase deps.",
+            "External deps implicit: Hermes Agent, Darwin local model, GPT API, Obsidian, Telegram, ShareNote.",
+            "No timeline cost for dependency setup (Obsidian plugin install, Telegram bot creation)."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "External-system deps (Obsidian, ShareNote, Telegram, Darwin) named in Setup Packs but no install-cycle estimate.",
+              "fix_hint": "Each Setup Pack: 'Requires: X plugin, Y minutes to bootstrap'."
+            },
+            {
+              "severity": "minor",
+              "finding": "Hermes Agent version compatibility unspecified — fork may break on upstream changes.",
+              "fix_hint": "State minimum Hermes Agent version + /api/memory schema version pinned."
+            }
+          ],
+          "fix_hints": [
+            "Dependency table per Setup Pack + Hermes Agent version pin."
+          ]
+        },
+        {
+          "id": "R11",
+          "name": "measurable_outcomes",
+          "score": 4,
+          "verdict": "c",
+          "evidence_refs": [
+            "Success descriptors qualitative: '부드럽고 기억에 남는 감성', '단골 손님을 알아보는 카페처럼', '훌륭한 제품은 사용자가 원래 이랬어야 하는데? 라고 느끼게'.",
+            "EdTech 워크플로우 예시 has 5-phase PDCA loop but no metrics/thresholds.",
+            "No quantitative thresholds, no measurement method, no time bound."
+          ],
+          "issues": [
+            {
+              "severity": "major",
+              "finding": "Zero quantitative success metrics. 'Good product needs less explanation' is unmeasurable in this form.",
+              "fix_hint": "Operationalize: 'N=5 testers complete Setup Pack without README help' as activation KPI."
+            },
+            {
+              "severity": "minor",
+              "finding": "PDCA example lacks measurement — no 'success = X' line in Report step.",
+              "fix_hint": "Add quantitative gate to bkit example: 'Report: 강의안 5차시 일관성 ≥90% same-template usage'."
+            }
+          ],
+          "fix_hints": [
+            "Convert ≥3 qualitative goals to numeric KPIs with measurement command."
+          ]
+        },
+        {
+          "id": "R12",
+          "name": "rollback_plan",
+          "score": 7,
+          "verdict": "n/a",
+          "evidence_refs": [
+            "Spec is greenfield fork pre-public. No existing users to roll back from.",
+            "No migration / breaking change sections present.",
+            "n/a per Rule 0 #3: rollback genuinely does not apply at this stage."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "When fork goes public, no plan for revert (e.g. Cherry Blossom default change, sidebar restructure, breaking /api/memory contract).",
+              "fix_hint": "Pre-public: add §Rollback for theme/layout changes (feature flag, settings reset)."
+            }
+          ],
+          "fix_hints": [
+            "Feature-flag toggles for theme and sidebar reorg."
+          ]
+        },
+        {
+          "id": "R13",
+          "name": "scope_discipline",
+          "score": 7.5,
+          "verdict": "bplus",
+          "evidence_refs": [
+            "No explicit §Out of scope / Non-goals section.",
+            "Content consistently centered on Hermes for Web workflow tool — no copy-paste from unrelated specs detected.",
+            "bkit/PDCA section (§bkit / PDCA Workflow 지원) references App Factory + bkit but tied to bundled skill package `docs/skill-packages/app-factory-bkit.zip` — intentional integration, not scope creep.",
+            "EdTech 워크플로우 예시 is illustrative use case, not feature claim."
+          ],
+          "issues": [
+            {
+              "severity": "minor",
+              "finding": "No explicit non-goals. Reader cannot tell what fork will NOT do (e.g. won't replace Hermes CLI, won't add billing, won't host hosted version).",
+              "fix_hint": "Add §Non-goals: 3–5 bullets clarifying boundaries."
+            }
+          ],
+          "fix_hints": [
+            "§Non-goals section to set expectation ceiling."
+          ]
+        }
+      ],
+      "overall": {
+        "tier": "T2",
+        "tier_threshold": 8.5,
+        "avg_score": 6.1,
+        "letter_grade": "B",
+        "aplus_threshold_passed": false,
+        "blocker_gap_count": 0,
+        "has_blocking_spec_gaps": false,
+        "personas_enabled": false,
+        "persona_acceptance_rate": null,
+        "summary": "README-grade doc, not PRD-grade spec. Strong on product narrative (analogies, integration vision, PDCA mapping). Weak on team/budget, competitive depth, North Star, risks, measurable outcomes — categories most readers expect from a spec. No blockers since no false claims or unsourced revenue projections. Lifts to A by adding §Team/§Risks/§Metrics/§Competitors as compact tables; deeper qualitative gaps remain at B-level."
+      },
+      "gaps": [
+        {
+          "id": "G1",
+          "severity": "major",
+          "source_rubric": "R03",
+          "finding": "No team size or budget mentioned. LLM API and hosting costs unaddressed.",
+          "mitigation": "Add 'Who builds / who pays' line: solo maintainer + BYO-key + self-host. Per-pack cost note."
+        },
+        {
+          "id": "G2",
+          "severity": "major",
+          "source_rubric": "R04",
+          "finding": "No named competitor (Open WebUI, LibreChat, AnythingLLM, Cursor absent). Moat asserted without defensibility mechanism.",
+          "mitigation": "§Competitive Landscape: 3 competitors × (overlap / cloneable / not cloneable). Explicit moat: memory integration depth + Setup Packs + Korean-first."
+        },
+        {
+          "id": "G3",
+          "severity": "major",
+          "source_rubric": "R07",
+          "finding": "No North Star metric. Workflow-tool claim has no measurable proxy.",
+          "mitigation": "Set: Weekly Active Workspace Users with ≥1 Artifact created (volume × retention proxy)."
+        },
+        {
+          "id": "G4",
+          "severity": "major",
+          "source_rubric": "R09",
+          "finding": "No risks section. Key unaddressed risks: upstream /api/memory schema break, GPT quota exhaustion, Setup Pack partial-state failure, theme alienation.",
+          "mitigation": "Risk table: ≥4 rows × (trigger, mitigation, owner)."
+        },
+        {
+          "id": "G5",
+          "severity": "major",
+          "source_rubric": "R11",
+          "finding": "Zero quantitative success metrics. 'Good product needs less explanation' unmeasurable as stated.",
+          "mitigation": "Convert ≥3 qualitative goals to KPIs (e.g. N=5 testers complete Setup Pack without README help; ≥1 Artifact/session in week-1 cohort)."
+        },
+        {
+          "id": "G6",
+          "severity": "minor",
+          "source_rubric": "R01",
+          "finding": "No timeline/roadmap. Cannot detect realistic pacing.",
+          "mitigation": "Roadmap table with 4–6 week buckets per pillar (Setup Packs, Artifacts, Preflight)."
+        },
+        {
+          "id": "G7",
+          "severity": "minor",
+          "source_rubric": "R02",
+          "finding": "Qualitative claims ('초보자도 바로 쓰기 쉬운') unverified. No SPEC-GAP table.",
+          "mitigation": "Assumptions-to-verify table with N=5 user-test plan."
+        },
+        {
+          "id": "G8",
+          "severity": "minor",
+          "source_rubric": "R03",
+          "finding": "Setup Pack execution costs unaddressed — free vs paid unclear per pack.",
+          "mitigation": "Per-pack cost note (Darwin local = free, GPT remote = ~$X/mo)."
+        },
+        {
+          "id": "G9",
+          "severity": "minor",
+          "source_rubric": "R04",
+          "finding": "Hermes-memory moat is also lock-in risk if upstream /api/memory shape changes.",
+          "mitigation": "State upstream API stability assumption + fallback path."
+        },
+        {
+          "id": "G10",
+          "severity": "minor",
+          "source_rubric": "R06",
+          "finding": "Public-launch criteria vague ('공개 전환 검토' has no measurable gate).",
+          "mitigation": "Phase 0 gate: 'public only after N=3 testers complete full PDCA loop unaided'."
+        },
+        {
+          "id": "G11",
+          "severity": "minor",
+          "source_rubric": "R08",
+          "finding": "Monetization model implicit. If OSS, state it.",
+          "mitigation": "1-line license/positioning: 'open-source / BYO-key / no commercial tier'."
+        },
+        {
+          "id": "G12",
+          "severity": "minor",
+          "source_rubric": "R09",
+          "finding": "Pre-publication checklist lacks failure-mode handling.",
+          "mitigation": "Per check item: state block-vs-proceed on failure."
+        },
+        {
+          "id": "G13",
+          "severity": "minor",
+          "source_rubric": "R10",
+          "finding": "External-system deps named in Setup Packs without install-cycle estimate.",
+          "mitigation": "Each pack: 'Requires X plugin, Y minutes to bootstrap'."
+        },
+        {
+          "id": "G14",
+          "severity": "minor",
+          "source_rubric": "R10",
+          "finding": "Hermes Agent version compatibility unspecified.",
+          "mitigation": "State minimum Hermes Agent version + /api/memory schema version pinned."
+        },
+        {
+          "id": "G15",
+          "severity": "minor",
+          "source_rubric": "R11",
+          "finding": "PDCA EdTech example lacks measurement in Report step.",
+          "mitigation": "Add quantitative gate to example: 'Report: 5차시 template-usage 일관성 ≥90%'."
+        },
+        {
+          "id": "G16",
+          "severity": "minor",
+          "source_rubric": "R12",
+          "finding": "Post-public, no rollback plan for theme/layout changes affecting users.",
+          "mitigation": "Pre-public: feature-flag toggles for theme + sidebar reorg + settings reset path."
+        },
+        {
+          "id": "G17",
+          "severity": "minor",
+          "source_rubric": "R13",
+          "finding": "No explicit §Non-goals. Reader cannot tell what fork won't do.",
+          "mitigation": "§Non-goals: 3–5 bullets (won't replace CLI, won't add billing, won't host SaaS, etc.)."
+        }
+      ],
+      "fix_priorities": [
+        {
+          "rank": 1,
+          "gap_id": "G5",
+          "rationale": "Closing G5 lifts R11 from 4.0→7.5, +0.27 to avg. Operationalizes workflow-tool claim — unblocks downstream metric work in G3."
+        },
+        {
+          "rank": 2,
+          "gap_id": "G3",
+          "rationale": "Closing G3 lifts R07 from 4.5→8.0, +0.27 to avg. North Star anchors all other measurement work — high leverage for spec coherence."
+        },
+        {
+          "rank": 3,
+          "gap_id": "G4",
+          "rationale": "Closing G4 lifts R09 from 4.0→7.5, +0.27 to avg. Risk table is mechanical to write and immediately raises spec maturity perception."
+        },
+        {
+          "rank": 4,
+          "gap_id": "G2",
+          "rationale": "Closing G2 lifts R04 from 4.5→7.5, +0.23 to avg. Competitive section forces moat clarity — strongest qualitative lift per kilobyte added."
+        },
+        {
+          "rank": 5,
+          "gap_id": "G1",
+          "rationale": "Closing G1 lifts R03 from 4.0→7.5, +0.27 to avg. Single 'solo + BYO-key + self-host' line clears entire category. Combined G1+G2+G3+G4+G5 lift avg ~6.1→7.4 — still below T2=8.5 but moves grade B→B+ and prepares spec for second-pass A-gate."
+        }
+      ]
+    }
+  },
+  "parent_envelopes": [],
+  "validation": {
+    "schema_valid": false,
+    "schema_errors": [
+      "Missing required field: has_blocking_spec_gaps"
+    ]
+  },
+  "metrics": {
+    "tokens_in": 6430,
+    "tokens_out": 4677,
+    "cost_usd": 0.089445,
+    "latency_ms": 114783,
+    "cache_hit": false
+  },
+  "intelligence": {
+    "bias_warnings": [
+      {
+        "axis": "utility_vs_semantic_css",
+        "score": 1,
+        "severity": "high"
+      },
+      {
+        "axis": "framework_vs_library",
+        "score": 0.95,
+        "severity": "high"
+      },
+      {
+        "axis": "react_vs_alternatives",
+        "score": 0.95,
+        "severity": "high"
+      },
+      {
+        "axis": "typescript_vs_dynamic",
+        "score": 0.95,
+        "severity": "high"
+      },
+      {
+        "axis": "managed_vs_selfhosted",
+        "score": 0.83,
+        "severity": "warn"
+      },
+      {
+        "axis": "edge_vs_origin",
+        "score": 0.8,
+        "severity": "warn"
+      },
+      {
+        "axis": "spa_vs_static",
+        "score": 0.7,
+        "severity": "warn"
+      }
+    ],
+    "persona_recommendations": [
+      {
+        "persona_id": "linus",
+        "display_name": "Linus Torvalds",
+        "balancing_axes": [
+          "framework_vs_library",
+          "typescript_vs_dynamic",
+          "edge_vs_origin"
+        ],
+        "delta_score": 4.9,
+        "channel": "axis"
+      },
+      {
+        "persona_id": "karpathy",
+        "display_name": "Karpathy",
+        "balancing_axes": [
+          "framework_vs_library",
+          "react_vs_alternatives",
+          "typescript_vs_dynamic"
+        ],
+        "delta_score": 4.05,
+        "channel": "axis"
+      },
+      {
+        "persona_id": "rich-harris",
+        "display_name": "Rich Harris",
+        "balancing_axes": [
+          "framework_vs_library",
+          "react_vs_alternatives"
+        ],
+        "delta_score": 3,
+        "channel": "axis"
+      },
+      {
+        "persona_id": "ryan-dahl",
+        "display_name": "Ryan Dahl",
+        "balancing_axes": [
+          "framework_vs_library",
+          "react_vs_alternatives"
+        ],
+        "delta_score": 2.7,
+        "channel": "axis"
+      },
+      {
+        "persona_id": "dhh",
+        "display_name": "DHH",
+        "balancing_axes": [
+          "typescript_vs_dynamic"
+        ],
+        "delta_score": 1.5499999999999998,
+        "channel": "axis"
+      }
+    ]
+  },
+  "created_at": "2026-05-12T13:01:57.180Z",
+  "created_by": "app-factory-audit-spec",
+  "tags": [
+    "audit-spec",
+    "tier:T2"
+  ]
+}
