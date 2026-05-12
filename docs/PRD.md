@@ -419,13 +419,15 @@ PowerShell equivalent (Windows): use WSL or set `HERMES_WEBUI_PORT` env var and 
 
 For Phase 1 (Internal validation) to begin:
 - [x] PRD v1.0 written (this document)
-- [x] All 6 PRs merged to `revised/main` (PR #1-#6, as of 2026-05-12)
-- [x] App-factory audit score ≥B (current: B, target post-PRD ≥A)
-- [ ] N=3 invitational testers identified (TBD)
-- [ ] Tester onboarding script (link to docs/tester-onboarding.md) — TBD next sprint
-- [ ] Quality gate dashboard or manual tracking sheet — TBD next sprint
+- [x] All 6 PRs merged to `revised/main` (PR #1-#6, as of 2026-05-12); additionally PR #7 (this PRD) + PR #8 (Desk-2) + PR #9 (Phase 1 beta prep) on top
+- [x] App-factory audit score ≥B (current: B for README, A-target for this PRD pending WSL re-audit)
+- [ ] N=3 invitational testers identified — *recruitment in progress*, tracker at [`docs/phase1-tracker.md`](phase1-tracker.md) §1
+- [x] Tester onboarding script ✅ [`docs/tester-onboarding.md`](tester-onboarding.md)
+- [x] Quality gate / manual tracking sheet ✅ [`docs/phase1-tracker.md`](phase1-tracker.md)
 
-**Signed**: @Reasonofmoon · **Date**: 2026-05-12 · **Status**: ready for app-factory re-audit
+Outstanding gate item: **N=3 testers identified + first PDCA loop completion**. All artifacts ready; only recruitment + execution remain.
+
+**Signed**: @Reasonofmoon · **Date**: 2026-05-12 · **Status**: ready for tester recruitment (5/6 sign-off items complete)
 
 ---
 
