@@ -103,11 +103,13 @@ function extractArtifactsFromText(text){
     if(!body) continue;
     const titleMatch = attrs.match(/title\s*=\s*"([^"]+)"/i) || attrs.match(/title\s*=\s*([^\s]+)/i);
     const typeMatch  = attrs.match(/type\s*=\s*([a-z]+)/i);
+    const explicitType = (typeMatch && typeMatch[1].toLowerCase()) || 'marked';
     found.push({
-      type:     (typeMatch && typeMatch[1].toLowerCase()) || 'marked',
+      type:     explicitType,
       title:    titleMatch ? titleMatch[1].slice(0, _ART_MAX_TITLE) : _extractTitle(body, '명시 산출물'),
       content:  body,
-      language: null
+      language: null,
+      meta:     _extractMetaFor(explicitType, body)
     });
   }
 
@@ -131,16 +133,30 @@ function extractArtifactsFromText(text){
     }
   }
 
-  // 3. Markdown note (whole-message)
+  // 3. Markdown note (whole-message) — may be reclassified by _inferType
   const stripped = text.trim();
   const startsWithH1 = /^#{1,2}\s+\S/.test(stripped);
   const bodyOnly = stripped.replace(/```[\s\S]*?```/g, '');
   if(startsWithH1 && bodyOnly.length >= _ART_MIN_NOTE_CHARS && found.every(f => f.type !== 'marked')){
+    const inferred = _inferType(stripped);
     found.push({
-      type:     'note',
-      title:    _extractTitle(stripped, '노트'),
+      type:     inferred,
+      title:    _extractTitle(stripped, _typeLabel(inferred)),
       content:  stripped,
-      language: null
+      language: null,
+      meta:     _extractMetaFor(inferred, stripped)
+    });
+  }
+
+  // 4. Correction pattern outside explicit marker (원문/첨삭 keywords)
+  // even if no H1 was present
+  if(!startsWithH1 && _looksLikeCorrection(stripped) && found.every(f => f.type === 'code')){
+    found.push({
+      type:     'correction',
+      title:    _extractTitle(stripped, '영작 첨삭'),
+      content:  stripped,
+      language: null,
+      meta:     _extractCorrection(stripped)
     });
   }
 
@@ -154,6 +170,7 @@ function _newArtifact(item, sessionId, msgKey, messageIndex){
     title:        item.title,
     content:      item.content,
     language:     item.language || null,
+    meta:         item.meta || null,  // MVP-3: type-specific structured data
     createdAt:    Date.now(),
     updatedAt:    null,
     sessionId,
@@ -397,12 +414,8 @@ function _renderPreview(a){
       if(ta) ta.focus();
     }, 30);
   } else {
-    // Render markdown via ui.js renderMd if available
-    if(typeof window.renderMd === 'function'){
-      bodyEl.innerHTML = window.renderMd(a.content);
-    } else {
-      bodyEl.innerHTML = '<pre><code>' + escHtml(a.content) + '</code></pre>';
-    }
+    // MVP-3: dispatch to type-specific renderer
+    bodyEl.innerHTML = _renderArtifactByType(a);
     if(editBtn)   editBtn.style.display = '';
     if(saveBtn)   saveBtn.style.display = 'none';
     if(cancelBtn) cancelBtn.style.display = 'none';
@@ -649,6 +662,201 @@ function jumpToMessage(artifactId){
   }, 280);
 }
 
+// ── MVP-3: Type inference + meta extraction ────────────────────────────────
+
+// Infer the most specific type from raw text. Returns one of:
+//   'correction' | 'slides' | 'note'  (codes/marked are handled upstream)
+function _inferType(text){
+  if(!text) return 'note';
+  // correction: "원문:" + "첨삭:" (or English equivalents)
+  if(_looksLikeCorrection(text)) return 'correction';
+  // slides: many H1/H2 (≥3) + slide-ish keywords or --- separators
+  const h1Count = (text.match(/^#{1,2}\s+/gm) || []).length;
+  const hasHr   = /^---\s*$/m.test(text);
+  const hasKw   = /(?:^|\s)(?:Day|Slide|차시|강의|Lesson|Chapter)\s*\d/i.test(text);
+  if(h1Count >= 3 && (hasKw || hasHr)) return 'slides';
+  return 'note';
+}
+
+function _looksLikeCorrection(text){
+  // require both halves to be plausible
+  const hasOrig = /(?:^|\n)\s*(?:원문|Original|Before|수정\s*전)\s*[:：]/i.test(text);
+  const hasCorr = /(?:^|\n)\s*(?:첨삭|Corrected|After|수정\s*후|Revised)\s*[:：]/i.test(text);
+  return hasOrig && hasCorr;
+}
+
+// Dispatch meta extraction by type. Returns null if not applicable.
+function _extractMetaFor(type, text){
+  if(type === 'correction') return _extractCorrection(text);
+  if(type === 'slides')     return _extractSlides(text);
+  return null;
+}
+
+// Parse "원문 / 첨삭 / 코멘트" sections into structured data.
+function _extractCorrection(text){
+  if(!text) return null;
+  const re = (label) =>
+    new RegExp(`(?:^|\\n)\\s*(?:${label})\\s*[:：]\\s*([\\s\\S]*?)(?=\\n\\s*(?:원문|Original|Before|수정\\s*전|첨삭|Corrected|After|수정\\s*후|Revised|코멘트|Comments?|설명|Notes?)\\s*[:：]|$)`, 'i');
+  const origM = text.match(re('원문|Original|Before|수정\\s*전'));
+  const corrM = text.match(re('첨삭|Corrected|After|수정\\s*후|Revised'));
+  const noteM = text.match(re('코멘트|Comments?|설명|Notes?'));
+
+  const original  = origM ? origM[1].trim() : '';
+  const corrected = corrM ? corrM[1].trim() : '';
+  let comments = [];
+  if(noteM){
+    comments = noteM[1].trim().split(/\n+/).map(l => l.replace(/^[-*•\d.\s]+/, '').trim()).filter(Boolean);
+  }
+  if(!original && !corrected) return null;
+  return {original, corrected, comments};
+}
+
+// Split on H1/H2 headings into slide pages: {title, body}.
+function _extractSlides(text){
+  if(!text) return null;
+  const pages = [];
+  // Split keeping the heading at the start of each chunk
+  const chunks = text.split(/(?=^#{1,2}\s+)/m).map(s => s.trim()).filter(Boolean);
+  for(const ch of chunks){
+    const titleM = ch.match(/^#{1,2}\s+(.+?)\s*$/m);
+    if(!titleM){
+      // No heading in this chunk (likely intro before first heading)
+      if(ch.length > 20) pages.push({title: '도입', body: ch});
+      continue;
+    }
+    const title = titleM[1].trim();
+    const body  = ch.replace(/^#{1,2}\s+.+?\s*\n?/, '').trim();
+    pages.push({title, body});
+  }
+  if(pages.length < 2) return null;  // not really slides
+  return {pages};
+}
+
+// ── MVP-3: Type-aware renderers ────────────────────────────────────────────
+
+function _renderArtifactByType(a){
+  if(!a) return '';
+  const md = (s) => typeof window.renderMd === 'function' ? window.renderMd(s) : ('<pre>' + escHtml(s) + '</pre>');
+  switch(a.type){
+    case 'correction': return _renderCorrection(a, md);
+    case 'slides':     return _renderSlides(a, md);
+    case 'code':       return md(a.content);          // fenced code already handled by renderMd
+    case 'note':
+    case 'marked':
+    default:           return md(a.content);
+  }
+}
+
+function _renderCorrection(a, md){
+  let meta = a.meta;
+  if(!meta || (!meta.original && !meta.corrected)){
+    meta = _extractCorrection(a.content);
+  }
+  if(!meta){
+    return md(a.content);  // fallback to plain markdown
+  }
+  const diffNote = meta.original && meta.corrected && meta.original !== meta.corrected
+    ? `<div class="corr-status">원문 → 첨삭 비교</div>` : '';
+  const commentsHtml = (meta.comments && meta.comments.length)
+    ? `<div class="corr-comments">
+         <div class="corr-comments-label">💬 코멘트</div>
+         <ul>${meta.comments.map(c => `<li>${escHtml(c)}</li>`).join('')}</ul>
+       </div>`
+    : '';
+  return `
+    <div class="artifact-correction">
+      ${diffNote}
+      <div class="corr-split">
+        <div class="corr-pane corr-original">
+          <div class="corr-pane-label">원문 (Original)</div>
+          <div class="corr-pane-body">${md(meta.original || '_(없음)_')}</div>
+        </div>
+        <div class="corr-pane corr-corrected">
+          <div class="corr-pane-label">첨삭 (Corrected)</div>
+          <div class="corr-pane-body">${md(meta.corrected || '_(없음)_')}</div>
+        </div>
+      </div>
+      ${commentsHtml}
+    </div>`;
+}
+
+let _slidesState = {artifactId: null, page: 0};
+
+function _renderSlides(a, md){
+  let meta = a.meta;
+  if(!meta || !meta.pages || !meta.pages.length){
+    meta = _extractSlides(a.content);
+  }
+  if(!meta || !meta.pages || !meta.pages.length){
+    return md(a.content);
+  }
+  // Reset page if switching artifact
+  if(_slidesState.artifactId !== a.id){
+    _slidesState = {artifactId: a.id, page: 0};
+  }
+  const total = meta.pages.length;
+  const idx   = Math.min(_slidesState.page, total - 1);
+  const page  = meta.pages[idx];
+
+  // Dots indicator
+  const dots = meta.pages.map((_, i) =>
+    `<span class="slide-dot ${i === idx ? 'active' : ''}" onclick="goToSlide(${i})" title="슬라이드 ${i+1}"></span>`
+  ).join('');
+
+  return `
+    <div class="artifact-slides">
+      <div class="slide-page">
+        <h2 class="slide-title">${escHtml(page.title)}</h2>
+        <div class="slide-body">${md(page.body)}</div>
+      </div>
+      <div class="slide-nav">
+        <button class="slide-nav-btn" onclick="prevSlide()" ${idx === 0 ? 'disabled' : ''}>◂ 이전</button>
+        <div class="slide-indicator">
+          <span class="slide-counter">${idx + 1} / ${total}</span>
+          <div class="slide-dots">${dots}</div>
+        </div>
+        <button class="slide-nav-btn" onclick="nextSlide()" ${idx === total - 1 ? 'disabled' : ''}>다음 ▸</button>
+      </div>
+    </div>`;
+}
+
+function prevSlide(){
+  if(!_currentArtifactId) return;
+  _slidesState.page = Math.max(0, _slidesState.page - 1);
+  const a = _getArtifact(_currentArtifactId);
+  if(a){
+    const bodyEl = document.getElementById('artifactPreviewBody');
+    if(bodyEl) bodyEl.innerHTML = _renderSlides(a, (s) => typeof window.renderMd === 'function' ? window.renderMd(s) : ('<pre>' + escHtml(s) + '</pre>'));
+  }
+}
+function nextSlide(){
+  if(!_currentArtifactId) return;
+  const a = _getArtifact(_currentArtifactId);
+  if(!a) return;
+  const total = (a.meta && a.meta.pages && a.meta.pages.length) || _extractSlides(a.content)?.pages?.length || 0;
+  _slidesState.page = Math.min(total - 1, _slidesState.page + 1);
+  const bodyEl = document.getElementById('artifactPreviewBody');
+  if(bodyEl) bodyEl.innerHTML = _renderSlides(a, (s) => typeof window.renderMd === 'function' ? window.renderMd(s) : ('<pre>' + escHtml(s) + '</pre>'));
+}
+function goToSlide(idx){
+  if(!_currentArtifactId) return;
+  _slidesState.page = idx;
+  const a = _getArtifact(_currentArtifactId);
+  if(a){
+    const bodyEl = document.getElementById('artifactPreviewBody');
+    if(bodyEl) bodyEl.innerHTML = _renderSlides(a, (s) => typeof window.renderMd === 'function' ? window.renderMd(s) : ('<pre>' + escHtml(s) + '</pre>'));
+  }
+}
+
+// ── MVP-3: Focus mode (full-screen preview) ────────────────────────────────
+function toggleArtifactFullscreen(){
+  const modal = document.querySelector('.artifact-preview-modal');
+  if(!modal) return;
+  modal.classList.toggle('fullscreen');
+  const btn = document.getElementById('artifactFullscreenBtn');
+  if(btn) btn.textContent = modal.classList.contains('fullscreen') ? '⛶ 축소' : '⛶ 확장';
+}
+
 // ── Utility ─────────────────────────────────────────────────────────────────
 function escHtml(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -708,3 +916,8 @@ window.viewArtifactRevision     = viewArtifactRevision;
 window.restoreRevision          = restoreRevision;
 window.jumpToMessage            = jumpToMessage;
 window.setArtifactSearch        = setArtifactSearch;
+// MVP-3: slide navigation + fullscreen
+window.prevSlide                = prevSlide;
+window.nextSlide                = nextSlide;
+window.goToSlide                = goToSlide;
+window.toggleArtifactFullscreen = toggleArtifactFullscreen;

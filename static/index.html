@@ -676,6 +676,7 @@
       <h3 id="artifactPreviewTitle" style="margin:0;font-size:14px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></h3>
       <div class="artifact-preview-actions">
         <span class="artifact-revision-wrap" id="artifactRevisionWrap" style="display:none"></span>
+        <button id="artifactFullscreenBtn" onclick="toggleArtifactFullscreen()" title="확장/축소 토글">&#9974; 확장</button>
         <button id="artifactEditBtn" onclick="enterEditMode()" title="편집 모드">&#9998; 편집</button>
         <button id="artifactSaveEditBtn" onclick="saveEdit()" title="저장 (새 버전 생성)" style="display:none">&#10003; 저장</button>
         <button id="artifactCancelEditBtn" onclick="cancelEdit()" title="편집 취소" style="display:none">&#10005; 취소</button>
@@ -703,7 +704,7 @@
 <script src="/static/commands.js?v=20260406a"></script>
 <script src="/static/messages.js?v=20260406a"></script>
 <script src="/static/panels.js?v=20260406a"></script>
-<script src="/static/artifacts.js?v=20260512b"></script>
+<script src="/static/artifacts.js?v=20260512c"></script>
 <script src="/static/boot.js?v=20260406a"></script>
 </body>
 </html>
