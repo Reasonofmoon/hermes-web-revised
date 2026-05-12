@@ -1960,3 +1960,236 @@ body.resizing{user-select:none;cursor:col-resize;}
   .wordcard-word   { font-size: 26px; }
   .wordcard-meaning{ font-size: 14px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* UI Phase C — Polish: typography, color palette, micro-interactions    */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Typography: enforce Pretendard fallback stack on every interactive
+   element (button/input/textarea/select don't inherit font-family by
+   default in most browsers). letter-spacing tuned for Korean. ─────────── */
+button, input, textarea, select {
+  font-family: inherit;
+  letter-spacing: -0.008em;
+}
+body {
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, h5, h6,
+.topbar-title, .sidebar-header h1,
+.artifact-card-title, .slide-title, .qa-marker, .wordcard-word {
+  letter-spacing: -0.015em;
+  font-feature-settings: "ss01", "ss02";  /* Pretendard stylistic sets if available */
+}
+.msg-body, .preview-md, .artifact-preview-body, .qa-text, .slide-body {
+  line-height: 1.7;  /* Korean reads better with slightly looser leading */
+}
+code, pre, .preview-code {
+  font-feature-settings: normal;  /* monospace stays neutral */
+  letter-spacing: 0;
+}
+
+/* ── Color palette: add semantic auxiliary tokens that resolve through
+   the existing --accent / --blue base.  None of the per-theme blocks
+   override these so they fall back to defaults seamlessly. ──────────── */
+:root {
+  --accent-soft:  rgba(233, 69, 96, 0.18);
+  --accent-glow:  rgba(233, 69, 96, 0.30);
+  --accent-deep:  #d93851;
+  --success:      #6fcf97;
+  --success-soft: rgba(111, 207, 151, 0.16);
+  --warning:      #f0c75b;
+  --warning-soft: rgba(240, 199, 91, 0.16);
+  --danger:       #e58787;
+  --danger-soft:  rgba(229, 135, 135, 0.16);
+  --info:         #82aaff;
+  --info-soft:    rgba(130, 170, 255, 0.16);
+  --shadow-sm:    0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:    0 4px 8px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg:    0 10px 25px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.06);
+  --transition-fast:   0.12s ease;
+  --transition-base:   0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+:root[data-theme="light"] {
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.04);
+}
+
+/* ── Focus ring: unify across every interactive element ─────────────── */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent-deep, var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus:not(:focus-visible) { outline: none; }
+
+/* ── Micro-interactions: lift on hover ──────────────────────────────── */
+.artifact-card,
+.session-item,
+.tool-card {
+  transition: transform var(--transition-base),
+              box-shadow var(--transition-base),
+              border-color var(--transition-base);
+}
+.artifact-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.session-item:not(.active):hover {
+  transform: translateX(2px);
+}
+
+/* ── Buttons: subtle press feedback ─────────────────────────────────── */
+.chip,
+.msg-action-btn,
+.cron-btn,
+.sm-btn,
+.artifact-export-btn,
+.artifact-panel-close,
+.wordcard-nav-btn,
+.slide-nav-btn,
+.artifact-preview-actions button {
+  transition: transform var(--transition-fast),
+              background var(--transition-fast),
+              border-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+}
+.chip:active,
+.msg-action-btn:active,
+.cron-btn:active,
+.sm-btn:active {
+  transform: scale(0.96);
+}
+
+/* ── Active sidebar tab: subtle accent glow ─────────────────────────── */
+.sidebar-nav .nav-tab.active {
+  background: var(--accent-soft);
+}
+.sidebar-nav .nav-tab.active::before {
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ── Modal scale-in: artifact preview, settings, onboarding ─────────── */
+@keyframes modal-scale-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)     translateY(0);   }
+}
+.artifact-preview-overlay.open .artifact-preview-modal,
+.settings-overlay[style*="block"] .settings-panel,
+.artifact-modal-overlay[style*="block"] .artifact-modal,
+.onboarding-overlay[style*="block"] .onboarding-card {
+  animation: modal-scale-in var(--transition-spring) both;
+}
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.artifact-preview-overlay.open { animation: overlay-fade-in 0.18s ease both; }
+
+/* ── Slide-in panel improvements: spring easing instead of linear ──── */
+.artifact-panel {
+  transition: transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+/* ── Toast micro-animation (used by showToast / save confirmations) ── */
+@keyframes toast-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.toast,
+.cron-toast,
+[class*="toast"] {
+  animation: toast-slide-up 0.22s ease both;
+}
+
+/* ── New chat bubble fade-in: only the most recent message animates ── */
+@keyframes msg-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.msg-row:last-of-type {
+  animation: msg-fade-in 0.22s ease both;
+}
+
+/* ── Empty-state illustration: subtle float (cherry-blossom feel) ──── */
+@keyframes illust-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+.artifact-empty-art img {
+  animation: illust-float 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .artifact-empty-art img { animation: none; }
+  .msg-row:last-of-type   { animation: none; }
+}
+
+/* ── Sidebar logo: subtle hover glow ────────────────────────────────── */
+.sidebar-header .logo {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.sidebar-header .logo:hover {
+  transform: rotate(-3deg) scale(1.05);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+/* ── Composer focus: more prominent ring while typing ───────────────── */
+.composer-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ── Wordcard / Q&A polish ──────────────────────────────────────────── */
+.wordcard-flip {
+  transition: transform var(--transition-base);
+}
+.wordcard-flip:active { transform: scale(0.985); }
+.qa-question:hover .qa-chevron { color: var(--accent); }
+
+/* ── Smooth scrolling for jump-to-message ───────────────────────────── */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ── Activity bar pulse while busy ──────────────────────────────────── */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.55; }
+}
+.activity-bar.busy .dot,
+.activity-dots .dot {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+.activity-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.activity-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Selection color: aligns with accent ────────────────────────────── */
+::selection { background: var(--accent-soft); color: var(--strong, inherit); }
+
+/* ── Scrollbar polish ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border2, rgba(255,255,255,0.16));
+  border-radius: 4px;
+  transition: background var(--transition-fast);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── Polished disabled state ────────────────────────────────────────── */
+button:disabled, [aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.42;
+  pointer-events: none;
+}
