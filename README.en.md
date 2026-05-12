@@ -420,6 +420,88 @@ Additional docs:
 
 ---
 
+## Success metrics
+
+This fork ships with explicit quantitative success criteria, based on the
+[App-Factory audit](docs/audits/app-factory-2026-05-12.md) recommendation.
+
+### North Star
+
+> **Weekly Active Workspace Users × ≥1 Artifact created**
+
+Volume × value-capture, not raw chat counts.
+
+### Activation KPIs
+
+| KPI | Target | Method |
+|-----|--------|--------|
+| Setup Pack unaided completion | ≥60% | N=5 testers, README-only |
+| Time-to-Value (first artifact) | ≤90 s | session start → first auto-extract |
+| D7 retention | ≥30% | return within 7 days |
+| Artifacts per session (avg) | ≥1 | derived from localStorage |
+
+### Risk register (4 rows)
+
+| Risk | Mitigation |
+|------|-----------|
+| Upstream `/api/memory` schema change | Schema version pin + memory-less fallback |
+| GPT API quota exhaustion | Rate-limit detection + Darwin local suggestion |
+| Setup Pack partial failure | Idempotent steps + persisted state |
+| Cherry Blossom theme alienation | 7 themes shipped + first-run picker (planned) |
+
+### Team & budget
+
+Solo maintainer · BYO-key (user provides own API key) · self-host (`./start.sh`) ·
+no commercial tier planned (open source, Apache 2.0 aligned with upstream Hermes Agent).
+
+Full details: see [`README.md` §성공 지표](README.md#성공-지표) (Korean) for the canonical
+version, or [`docs/PRD.md`](docs/PRD.md) for the full Product Requirements Document.
+
+---
+
+## bkit / PDCA Workflow support
+
+Hermes for Web is designed to support the [App Factory + bkit](docs/skill-packages/app-factory-bkit.zip)
+PDCA cycle and *Next Best Move* pattern. The "idea → execute → check → next step"
+loop maps directly to UI features:
+
+| bkit Phase | Hermes for Web |
+|-----------|----------------|
+| **Plan** | Setup Packs · Preflight Validator · new session |
+| **Do** | One-click workflows · Hermes response stream · auto-extracted artifacts |
+| **Check** | Preflight · git status · user review |
+| **Act** | Artifact edit/revision · memory save · Telegram handoff |
+| **Report** | Hermes response footer · session export · ShareNote |
+
+### Next Best Move footer
+
+```text
+Next best move: <one concrete action>
+Reason: <why this is highest-leverage>
+Gate: <scope|quality|security|docs|release>
+Automation: <manual|guided|semi_auto|auto>
+Risk: <low|medium|high>
+```
+
+Prompt Hermes: *"From now on append a bkit-style Next Best Move footer to every response."*
+
+### Install the bkit skill globally
+
+```bash
+# Claude Code
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.claude/skills/
+
+# Codex
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.codex/skills/
+
+# Hermes CLI
+unzip docs/skill-packages/app-factory-bkit.zip -d ~/.hermes/skills/
+```
+
+Full Korean version: [`README.md` §bkit / PDCA Workflow 지원](README.md#bkit--pdca-workflow-지원)
+
+---
+
 ## Recommended next steps after private upload
 
 1. Push to the private GitHub repo
