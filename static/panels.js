@@ -19,7 +19,13 @@ async function switchPanel(name) {
   if (name === 'artifacts' && typeof renderArtifactList === 'function') renderArtifactList();
   if (name === 'setup' && typeof renderSetupPackHistory === 'function') renderSetupPackHistory();
   if (name === 'checks' && typeof renderPreflightResult === 'function') renderPreflightResult('note');
-  if (name === 'desk' && typeof window.renderDeskBoard === 'function') window.renderDeskBoard();
+  if (name === 'desk' && typeof window.renderDeskBoard === 'function') {
+    // Phase Desk-2: refresh session auto-surface before rendering
+    if (typeof window.loadAutoSessionCards === 'function') {
+      await window.loadAutoSessionCards();
+    }
+    window.renderDeskBoard();
+  }
 }
 
 // ── Cron panel ──
