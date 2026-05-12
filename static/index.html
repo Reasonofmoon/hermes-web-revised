@@ -651,7 +651,7 @@
   </button>
 </nav>
 <div class="toast" id="toast"></div>
-<!-- Artifact-First panel (MVP-1, slide-in from right) -->
+<!-- Artifact-First panel (MVP-2, slide-in from right) -->
 <aside class="artifact-panel" id="artifactPanel" aria-hidden="true">
   <div class="artifact-panel-header">
     <div style="display:flex;align-items:center;gap:8px">
@@ -660,9 +660,12 @@
     </div>
     <button class="artifact-panel-close" onclick="toggleArtifactPanel()" title="닫기" aria-label="닫기">&#10005;</button>
   </div>
+  <div class="artifact-panel-search">
+    <input type="text" id="artifactSearch" placeholder="제목 · 내용 검색..." autocomplete="off">
+  </div>
   <div class="artifact-list" id="artifactList"></div>
   <div class="artifact-panel-footer">
-    <button class="artifact-export-btn" onclick="exportAllArtifacts()" title="이 세션의 모든 산출물을 한 .md 파일로 다운로드">&#8595; 모두 내보내기</button>
+    <button class="artifact-export-btn" onclick="exportAllArtifacts()" title="이 세션의 모든 산출물을 한 .md 파일로 다운로드">&#8595; 모두 내보내기 (.md)</button>
   </div>
 </aside>
 
@@ -672,8 +675,20 @@
     <div class="artifact-preview-header">
       <h3 id="artifactPreviewTitle" style="margin:0;font-size:14px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></h3>
       <div class="artifact-preview-actions">
+        <span class="artifact-revision-wrap" id="artifactRevisionWrap" style="display:none"></span>
+        <button id="artifactEditBtn" onclick="enterEditMode()" title="편집 모드">&#9998; 편집</button>
+        <button id="artifactSaveEditBtn" onclick="saveEdit()" title="저장 (새 버전 생성)" style="display:none">&#10003; 저장</button>
+        <button id="artifactCancelEditBtn" onclick="cancelEdit()" title="편집 취소" style="display:none">&#10005; 취소</button>
         <button onclick="copyArtifact()" title="클립보드에 복사">&#128203; 복사</button>
-        <button onclick="downloadArtifact()" title="파일로 다운로드">&#8595; 다운로드</button>
+        <span class="artifact-export-dropdown">
+          <button onclick="this.parentElement.classList.toggle('open')" title="내보내기 포맷 선택">&#8595; 내보내기 &#9662;</button>
+          <div class="artifact-export-menu">
+            <button onclick="exportArtifactAs('md');this.parentElement.parentElement.classList.remove('open')">.md (마크다운)</button>
+            <button onclick="exportArtifactAs('html');this.parentElement.parentElement.classList.remove('open')">.html</button>
+            <button onclick="exportArtifactAs('txt');this.parentElement.parentElement.classList.remove('open')">.txt (일반 텍스트)</button>
+            <button onclick="exportArtifactAs('print');this.parentElement.parentElement.classList.remove('open')">&#128424; PDF로 인쇄</button>
+          </div>
+        </span>
         <button onclick="deleteCurrentArtifact()" title="삭제" class="danger">&#128465;</button>
         <button onclick="closeArtifactPreview()" title="닫기" aria-label="닫기">&#10005;</button>
       </div>
@@ -688,7 +703,7 @@
 <script src="/static/commands.js?v=20260406a"></script>
 <script src="/static/messages.js?v=20260406a"></script>
 <script src="/static/panels.js?v=20260406a"></script>
-<script src="/static/artifacts.js?v=20260512a"></script>
+<script src="/static/artifacts.js?v=20260512b"></script>
 <script src="/static/boot.js?v=20260406a"></script>
 </body>
 </html>
