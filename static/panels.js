@@ -19,6 +19,7 @@ async function switchPanel(name) {
   if (name === 'artifacts' && typeof renderArtifactList === 'function') renderArtifactList();
   if (name === 'setup' && typeof renderSetupPackHistory === 'function') renderSetupPackHistory();
   if (name === 'checks' && typeof renderPreflightResult === 'function') renderPreflightResult('note');
+  if (name === 'desk' && typeof window.renderDeskBoard === 'function') window.renderDeskBoard();
 }
 
 // ── Cron panel ──
