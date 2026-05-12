@@ -25,3 +25,7 @@ full-UI.png
 # OS files
 .DS_Store
 Thumbs.db
+
+# codex-image-gen scratch logs (live next to the generated PNGs but should not be tracked)
+static/images/codex.*.log
+static/images/codex.*.jsonl

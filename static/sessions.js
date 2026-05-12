@@ -65,6 +65,9 @@ async function loadSession(sid){
     clearLiveToolCards();
     syncTopbar();await loadDir('.');renderMessages();highlightCode();
   }
+  // Artifact panel reflects this session's gallery (per-session storage key)
+  if(typeof window.updateArtifactCount === 'function') window.updateArtifactCount();
+  if(typeof window.renderArtifactPanel === 'function') window.renderArtifactPanel();
 }
 
 let _allSessions = [];  // cached for search filter
