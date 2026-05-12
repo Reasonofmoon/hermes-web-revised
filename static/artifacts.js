@@ -278,6 +278,8 @@ function _typeIcon(type){
     marked:     'marked',
     correction: 'correction',
     slides:     'slides',
+    wordcard:   'wordcard',
+    qa:         'qa',
   };
   const name = map[type] || 'note';
   if(typeof window.icon === 'function'){
@@ -287,9 +289,13 @@ function _typeIcon(type){
   return '<span class="type-icon-fallback" aria-hidden="true">·</span>';
 }
 function _typeLabel(type){
-  if(type === 'note')   return '노트';
-  if(type === 'code')   return '코드';
-  if(type === 'marked') return '명시';
+  if(type === 'note')       return '노트';
+  if(type === 'code')       return '코드';
+  if(type === 'marked')     return '명시';
+  if(type === 'correction') return '영작 첨삭';
+  if(type === 'slides')     return '슬라이드';
+  if(type === 'wordcard')   return '단어장';
+  if(type === 'qa')         return 'Q&A';
   return '기타';
 }
 function _formatRelTime(ts){
@@ -392,6 +398,8 @@ function _renderPreview(a){
   const titleEl  = document.getElementById('artifactPreviewTitle');
   const bodyEl   = document.getElementById('artifactPreviewBody');
   const revWrap  = document.getElementById('artifactRevisionWrap');
+  const typeSel  = document.getElementById('artifactTypeSelect');
+  if(typeSel) typeSel.value = a.type;
   const editBtn  = document.getElementById('artifactEditBtn');
   const saveBtn  = document.getElementById('artifactSaveEditBtn');
   const cancelBtn= document.getElementById('artifactCancelEditBtn');
@@ -685,8 +693,12 @@ function jumpToMessage(artifactId){
 //   'correction' | 'slides' | 'note'  (codes/marked are handled upstream)
 function _inferType(text){
   if(!text) return 'note';
-  // correction: "원문:" + "첨삭:" (or English equivalents)
+  // Priority: correction > qa > wordcard > slides > note
+  // (qa/wordcard take precedence over slides because slides matches
+  //  too eagerly on multi-heading lists)
   if(_looksLikeCorrection(text)) return 'correction';
+  if(_looksLikeQA(text))         return 'qa';
+  if(_looksLikeWordcard(text))   return 'wordcard';
   // slides: many H1/H2 (≥3) + slide-ish keywords or --- separators
   const h1Count = (text.match(/^#{1,2}\s+/gm) || []).length;
   const hasHr   = /^---\s*$/m.test(text);
@@ -702,10 +714,26 @@ function _looksLikeCorrection(text){
   return hasOrig && hasCorr;
 }
 
+function _looksLikeQA(text){
+  // 2+ Q-markers (any of: **Q:** / **Q.** / Q1. / Q1: / ## Q1.)
+  const re = /(?:^|\n)\s*(?:\*\*Q[\d]*[:.]?\s*\*\*|Q\d+\s*[:.]|##{1,3}\s+Q\d+[:.]?)/gi;
+  const matches = text.match(re);
+  return !!(matches && matches.length >= 2);
+}
+
+function _looksLikeWordcard(text){
+  // 3+ word-meaning rows: **word** — meaning / - word: meaning
+  const re = /(?:^|\n)\s*(?:\*\*[^*\n]{1,40}\*\*\s*[—\-:]\s*\S|[-*]\s+[^:—\n]{1,40}\s*[:—]\s+\S)/gm;
+  const matches = text.match(re);
+  return !!(matches && matches.length >= 3);
+}
+
 // Dispatch meta extraction by type. Returns null if not applicable.
 function _extractMetaFor(type, text){
   if(type === 'correction') return _extractCorrection(text);
   if(type === 'slides')     return _extractSlides(text);
+  if(type === 'wordcard')   return _extractWordcard(text);
+  if(type === 'qa')         return _extractQA(text);
   return null;
 }
 
@@ -749,6 +777,71 @@ function _extractSlides(text){
   return {pages};
 }
 
+// Extract "word — meaning" pairs into a flip-card deck.
+// Supports two patterns:
+//   1. **word** — meaning   (or **word** - meaning, **word**: meaning)
+//   2. - word: meaning      (bullet list)
+// Optional "example: ..." line right after a pair attaches to that card.
+function _extractWordcard(text){
+  if(!text) return null;
+  const pages = [];
+
+  // Pattern 1: bolded word — meaning
+  const re1 = /(?:^|\n)\s*\*\*([^*\n]{1,40})\*\*\s*[—\-:]\s*([^\n]+)/g;
+  let m;
+  while((m = re1.exec(text)) !== null){
+    pages.push({word: m[1].trim(), meaning: m[2].trim()});
+  }
+
+  // Pattern 2: bullet list (only if pattern 1 produced too few)
+  if(pages.length < 3){
+    pages.length = 0;
+    const re2 = /(?:^|\n)\s*[-*]\s+([^:—\n]{1,40})\s*[:—]\s+([^\n]+)/g;
+    while((m = re2.exec(text)) !== null){
+      pages.push({word: m[1].trim(), meaning: m[2].trim()});
+    }
+  }
+
+  if(pages.length < 3) return null;  // need ≥3 to feel like a deck
+  return {pages};
+}
+
+// Extract Q/A pairs into an accordion.
+// Patterns tried in order:
+//   1. **Q:** ... **A:** ...
+//   2. ### Q1. ... (next ### Q ...)
+//   3. Q1: ... A1: ...
+function _extractQA(text){
+  if(!text) return null;
+
+  // Pattern 1: bold Q/A markers
+  let pairs = [];
+  const re1 = /(?:^|\n)\s*\*\*Q\d*\s*[:.]?\s*\*\*\s*([\s\S]*?)\n\s*\*\*A\d*\s*[:.]?\s*\*\*\s*([\s\S]*?)(?=\n\s*\*\*Q\d*\s*[:.]?\s*\*\*|$)/gi;
+  let m;
+  while((m = re1.exec(text)) !== null){
+    pairs.push({question: m[1].trim(), answer: m[2].trim()});
+  }
+  if(pairs.length >= 2) return {pairs};
+
+  // Pattern 2: ### Q1. heading
+  pairs = [];
+  const re2 = /(?:^|\n)#{2,4}\s+Q\d*\s*[.:]?\s+([^\n]+)\n([\s\S]*?)(?=\n#{2,4}\s+Q\d*\s*[.:]?\s+|$)/gi;
+  while((m = re2.exec(text)) !== null){
+    pairs.push({question: m[1].trim(), answer: m[2].trim()});
+  }
+  if(pairs.length >= 2) return {pairs};
+
+  // Pattern 3: plain Q: / A:
+  pairs = [];
+  const re3 = /(?:^|\n)\s*Q\d*\s*[:.]\s*([^\n]+)\n\s*A\d*\s*[:.]\s*([\s\S]*?)(?=\n\s*Q\d*\s*[:.]|$)/gi;
+  while((m = re3.exec(text)) !== null){
+    pairs.push({question: m[1].trim(), answer: m[2].trim()});
+  }
+  if(pairs.length >= 2) return {pairs};
+
+  return null;
+}
+
 // ── MVP-3: Type-aware renderers ────────────────────────────────────────────
 
 function _renderArtifactByType(a){
@@ -757,6 +850,8 @@ function _renderArtifactByType(a){
   switch(a.type){
     case 'correction': return _renderCorrection(a, md);
     case 'slides':     return _renderSlides(a, md);
+    case 'wordcard':   return _renderWordcard(a, md);
+    case 'qa':         return _renderQA(a, md);
     case 'code':       return md(a.content);          // fenced code already handled by renderMd
     case 'note':
     case 'marked':
@@ -866,6 +961,123 @@ function goToSlide(idx){
   }
 }
 
+// Helper: redraw current artifact body in the preview modal (Phase 3.2)
+function _redrawArtifactBody(){
+  if(!_currentArtifactId) return;
+  const a = _getArtifact(_currentArtifactId);
+  if(!a) return;
+  const bodyEl = document.getElementById('artifactPreviewBody');
+  if(bodyEl) bodyEl.innerHTML = _renderArtifactByType(a);
+}
+
+// ── Phase 3.2: Wordcard renderer (flip card deck) ──────────────────────────
+let _wordcardState = {artifactId: null, page: 0, flipped: false};
+
+function _renderWordcard(a, md){
+  let meta = a.meta;
+  if(!meta || !meta.pages || !meta.pages.length){
+    meta = _extractWordcard(a.content);
+  }
+  if(!meta || !meta.pages || !meta.pages.length){
+    return md(a.content);
+  }
+  if(_wordcardState.artifactId !== a.id){
+    _wordcardState = {artifactId: a.id, page: 0, flipped: false};
+  }
+  const total = meta.pages.length;
+  const idx   = Math.min(_wordcardState.page, total - 1);
+  const card  = meta.pages[idx];
+  const flipped = _wordcardState.flipped;
+
+  return `
+    <div class="artifact-wordcard">
+      <div class="wordcard-flip ${flipped ? 'flipped' : ''}" onclick="flipWordcard()" title="클릭/탭하여 뒤집기">
+        <div class="wordcard-face wordcard-front">
+          <div class="wordcard-prompt">단어</div>
+          <div class="wordcard-word">${escHtml(card.word)}</div>
+          <div class="wordcard-hint">탭하여 뜻 보기</div>
+        </div>
+        <div class="wordcard-face wordcard-back">
+          <div class="wordcard-prompt">뜻</div>
+          <div class="wordcard-meaning">${md(card.meaning)}</div>
+        </div>
+      </div>
+      <div class="wordcard-nav">
+        <button class="wordcard-nav-btn" onclick="event.stopPropagation();prevWord()" ${idx === 0 ? 'disabled' : ''}>◂ 이전</button>
+        <div class="wordcard-counter">${idx + 1} / ${total}</div>
+        <button class="wordcard-nav-btn" onclick="event.stopPropagation();nextWord()" ${idx === total - 1 ? 'disabled' : ''}>다음 ▸</button>
+      </div>
+      <div class="wordcard-hotkeys">←/→ 이동 · 스페이스 뒤집기</div>
+    </div>`;
+}
+
+function flipWordcard(){
+  _wordcardState.flipped = !_wordcardState.flipped;
+  _redrawArtifactBody();
+}
+function prevWord(){
+  _wordcardState.page = Math.max(0, _wordcardState.page - 1);
+  _wordcardState.flipped = false;
+  _redrawArtifactBody();
+}
+function nextWord(){
+  const a = _getArtifact(_currentArtifactId);
+  if(!a) return;
+  const meta = a.meta || _extractWordcard(a.content);
+  const total = (meta && meta.pages && meta.pages.length) || 1;
+  _wordcardState.page = Math.min(total - 1, _wordcardState.page + 1);
+  _wordcardState.flipped = false;
+  _redrawArtifactBody();
+}
+
+// ── Phase 3.2: Q&A renderer (accordion) ────────────────────────────────────
+function _renderQA(a, md){
+  let meta = a.meta;
+  if(!meta || !meta.pairs || !meta.pairs.length){
+    meta = _extractQA(a.content);
+  }
+  if(!meta || !meta.pairs || !meta.pairs.length){
+    return md(a.content);
+  }
+  return `
+    <div class="artifact-qa">
+      ${meta.pairs.map((p, i) => `
+        <div class="qa-item ${i === 0 ? 'open' : ''}">
+          <button class="qa-question" onclick="this.parentElement.classList.toggle('open')">
+            <span class="qa-marker">Q${i + 1}.</span>
+            <span class="qa-text">${md(p.question)}</span>
+            <span class="qa-chevron" aria-hidden="true">▸</span>
+          </button>
+          <div class="qa-answer">
+            <span class="qa-marker qa-marker-a">A.</span>
+            <div class="qa-text">${md(p.answer)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ── Phase 3.2: Manual type change ──────────────────────────────────────────
+// Lets the user override auto-inferred type from the modal header dropdown.
+// Recomputes `meta` for the new type and re-renders. Original content stays.
+function changeArtifactType(newType){
+  if(!_currentArtifactId || !newType) return;
+  const a = _getArtifact(_currentArtifactId);
+  if(!a) return;
+  if(a.type === newType){ _renderPreview(a); return; }
+  a.type = newType;
+  a.meta = _extractMetaFor(newType, a.content);
+  // Reset per-type navigation state so the new view starts fresh
+  _slidesState   = {artifactId: null, page: 0};
+  _wordcardState = {artifactId: null, page: 0, flipped: false};
+  _replaceArtifact(a);
+  _renderPreview(a);
+  renderArtifactPanel();
+  if(typeof window.showToast === 'function'){
+    window.showToast(`타입 변경: ${_typeLabel(newType)}`);
+  }
+}
+
 // ── MVP-3: Focus mode (full-screen preview) ────────────────────────────────
 function toggleArtifactFullscreen(){
   const modal = document.querySelector('.artifact-preview-modal');
@@ -892,11 +1104,25 @@ function _initArtifacts(){
     search.addEventListener('input', e => setArtifactSearch(e.target.value));
   }
 
-  // ESC closes modal
+  // Keyboard shortcuts inside the preview modal
   document.addEventListener('keydown', e => {
-    if(e.key === 'Escape'){
-      const overlay = document.getElementById('artifactPreviewOverlay');
-      if(overlay && overlay.classList.contains('open')) closeArtifactPreview();
+    const overlay = document.getElementById('artifactPreviewOverlay');
+    if(!overlay || !overlay.classList.contains('open')) return;
+    // Never hijack typing inside the edit textarea
+    if(e.target && e.target.tagName === 'TEXTAREA') return;
+    if(e.target && e.target.tagName === 'INPUT')    return;
+
+    if(e.key === 'Escape'){ closeArtifactPreview(); return; }
+    // Slides / wordcard navigation
+    const a = _getArtifact(_currentArtifactId);
+    if(!a) return;
+    if(a.type === 'slides'){
+      if(e.key === 'ArrowLeft')  { prevSlide(); e.preventDefault(); }
+      if(e.key === 'ArrowRight') { nextSlide(); e.preventDefault(); }
+    } else if(a.type === 'wordcard'){
+      if(e.key === 'ArrowLeft')  { prevWord(); e.preventDefault(); }
+      if(e.key === 'ArrowRight') { nextWord(); e.preventDefault(); }
+      if(e.key === ' ' || e.code === 'Space'){ flipWordcard(); e.preventDefault(); }
     }
   });
   // Click outside modal closes it
@@ -939,3 +1165,8 @@ window.prevSlide                = prevSlide;
 window.nextSlide                = nextSlide;
 window.goToSlide                = goToSlide;
 window.toggleArtifactFullscreen = toggleArtifactFullscreen;
+// Phase 3.2 — wordcard / qa / manual type change
+window.flipWordcard             = flipWordcard;
+window.prevWord                 = prevWord;
+window.nextWord                 = nextWord;
+window.changeArtifactType       = changeArtifactType;
