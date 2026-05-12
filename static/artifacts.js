@@ -270,10 +270,21 @@ function toggleArtifactPanel(){
 }
 
 function _typeIcon(type){
-  if(type === 'note')   return '📝';
-  if(type === 'code')   return '💻';
-  if(type === 'marked') return '🏷️';
-  return '📄';
+  // Return an inline SVG <svg> string (themeable via currentColor).
+  // Uses the global icon() helper from icons.js with type-specific glyphs.
+  const map = {
+    note:       'note',
+    code:       'code',
+    marked:     'marked',
+    correction: 'correction',
+    slides:     'slides',
+  };
+  const name = map[type] || 'note';
+  if(typeof window.icon === 'function'){
+    return window.icon(name, {size: 14, cls: 'type-icon'});
+  }
+  // Soft fallback if icons.js not loaded yet
+  return '<span class="type-icon-fallback" aria-hidden="true">·</span>';
 }
 function _typeLabel(type){
   if(type === 'note')   return '노트';
@@ -319,13 +330,15 @@ function renderArtifactPanel(){
           <p><a href="#" onclick="document.getElementById('artifactSearch').value='';setArtifactSearch('');return false">검색 지우기</a></p>
         </div>`;
     } else {
+      const saveIcon = (typeof window.icon === 'function') ? window.icon('bookmark', {size: 13, stroke: 1.8}) : '⬇';
       list.innerHTML = `
         <div class="artifact-empty">
+          <div class="artifact-empty-art">${(typeof window.icon === 'function') ? window.icon('artifact', {size: 56, stroke: 1.2, cls: 'art-illus'}) : ''}</div>
           <h4>아직 산출물이 없습니다</h4>
-          <p>대화에서 마크다운 노트(# 제목 + 200자 이상)나
+          <p>대화에서 마크다운 노트(<code># 제목</code> + 200자 이상)나
           긴 코드 블록(30줄 이상)이 응답에 포함되면 자동으로 누적됩니다.</p>
           <p style="margin-top:8px;font-size:11px">
-          또는 어떤 응답이든 <b>💾</b> 버튼으로 직접 저장할 수 있고,<br>
+          또는 모든 응답에 붙는 ${saveIcon} 버튼으로 직접 저장,<br>
           명시 마커도 가능합니다:<br>
           <code>[ARTIFACT title="..."]내용[/ARTIFACT]</code></p>
         </div>`;
@@ -382,7 +395,9 @@ function _renderPreview(a){
   const cancelBtn= document.getElementById('artifactCancelEditBtn');
   if(!titleEl || !bodyEl) return;
 
-  titleEl.textContent = _typeIcon(a.type) + ' ' + a.title;
+  // Use innerHTML because _typeIcon returns an <svg> string (SVG icons),
+  // not a unicode emoji. Escape the title for safety.
+  titleEl.innerHTML = _typeIcon(a.type) + ' <span class="artifact-preview-title-text">' + escHtml(a.title) + '</span>';
 
   // Revision dropdown
   if(revWrap){
@@ -757,9 +772,10 @@ function _renderCorrection(a, md){
   }
   const diffNote = meta.original && meta.corrected && meta.original !== meta.corrected
     ? `<div class="corr-status">원문 → 첨삭 비교</div>` : '';
+  const commentIcon = (typeof window.icon === 'function') ? window.icon('comment', {size: 13, stroke: 1.8}) : '';
   const commentsHtml = (meta.comments && meta.comments.length)
     ? `<div class="corr-comments">
-         <div class="corr-comments-label">💬 코멘트</div>
+         <div class="corr-comments-label">${commentIcon} 코멘트</div>
          <ul>${meta.comments.map(c => `<li>${escHtml(c)}</li>`).join('')}</ul>
        </div>`
     : '';
