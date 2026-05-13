@@ -283,8 +283,28 @@ document.querySelectorAll('.quick-action').forEach(btn=>{
   };
 });
 
+// When a workflow/artifact button is clicked as the *first* message of a
+// session, the prompt template (which embeds the title verbatim) becomes
+// the literal user message, the server then derives the session title from
+// that message, and subsequent clicks re-embed it — ballooning the input
+// each turn. Worse, titles are often truncated, so we can't rely on
+// matching the closing `이고 작업공간은 "…" 입니다.` markers.
+//
+// Heuristic: any title that starts with our own template lead has been
+// polluted and is unsafe to re-embed. Discard it and let the caller fall
+// back to the neutral default. False-positive cost is negligible (a real
+// user message that literally begins with `현재 세션 제목은 "` is vanishingly
+// unlikely, and the only effect is using `현재 작업` as the title).
+const _WORKFLOW_TITLE_PREFIX = /^\s*현재 세션 제목은 "/;
+function _cleanSessionTitle(rawTitle){
+  if(!rawTitle) return '';
+  const t = String(rawTitle).trim();
+  if(_WORKFLOW_TITLE_PREFIX.test(t)) return '';
+  return t;
+}
+
 function buildArtifactPrompt(kind){
-  const title=(S.session&&S.session.title)||'현재 작업';
+  const title=_cleanSessionTitle((S.session&&S.session.title)||'')||'현재 작업';
   const workspace=(S.session&&S.session.workspace)||'';
   const lead=`현재 세션 제목은 "${title}"이고 작업공간은 "${workspace}" 입니다. `;
   if(kind==='obsidian-note'){
@@ -315,7 +335,7 @@ document.querySelectorAll('.artifact-action').forEach(btn=>{
 });
 
 function buildWorkflowPrompt(kind){
-  const title=(S.session&&S.session.title)||'현재 작업';
+  const title=_cleanSessionTitle((S.session&&S.session.title)||'')||'현재 작업';
   const workspace=(S.session&&S.session.workspace)||'';
   const lead=`현재 세션 제목은 "${title}"이고 작업공간은 "${workspace}" 입니다. `;
   if(kind==='generate-note'){
