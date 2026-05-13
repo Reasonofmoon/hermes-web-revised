@@ -347,27 +347,37 @@ document.querySelectorAll('.artifact-action[data-workflow]').forEach(btn=>{
   };
 });
 
-function _artifactStoreKey(){
+// Shelf artifacts = manually-registered artifact records (boot.js system).
+// Distinct from the auto-extracted artifacts in artifacts.js — different
+// storage prefix ('hermes-webui-artifacts:' here vs 'hermes-artifacts:' there).
+// Names are deliberately scoped so they don't shadow artifacts.js's safer
+// _loadArtifacts(sid) / _saveArtifacts(sid, list); shadowing previously caused
+// renderArtifactPanel to crash on .slice().reverse() when the wrong store
+// returned a non-array.
+function _shelfArtifactStoreKey(){
   const sid=S.session&&S.session.session_id;
   return sid?`hermes-webui-artifacts:${sid}`:'hermes-webui-artifacts:global';
 }
-function _loadArtifacts(){
-  try{return JSON.parse(localStorage.getItem(_artifactStoreKey())||'[]');}catch(e){return [];}
+function _loadShelfArtifacts(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(_shelfArtifactStoreKey())||'[]');
+    return Array.isArray(raw)?raw:[];
+  }catch(e){return [];}
 }
-function _saveArtifacts(items){
-  localStorage.setItem(_artifactStoreKey(), JSON.stringify(items.slice(0,20)));
+function _saveShelfArtifacts(items){
+  localStorage.setItem(_shelfArtifactStoreKey(), JSON.stringify((items||[]).slice(0,20)));
 }
 let _recentArtifactPath='';
 function registerArtifact(item){
-  const items=_loadArtifacts().filter(x=>x.path!==item.path);
+  const items=_loadShelfArtifacts().filter(x=>x.path!==item.path);
   items.unshift({...item,created_at:new Date().toISOString()});
-  _saveArtifacts(items);
+  _saveShelfArtifacts(items);
   _recentArtifactPath=item.path;
   renderArtifactList();
 }
 function removeArtifactRecord(path){
-  const items=_loadArtifacts().filter(x=>x.path!==path);
-  _saveArtifacts(items);
+  const items=_loadShelfArtifacts().filter(x=>x.path!==path);
+  _saveShelfArtifacts(items);
   renderArtifactList();
 }
 function buildArtifactActionPrompt(path, action){
@@ -390,7 +400,7 @@ async function runArtifactWorkflow(path, action){
 function renderArtifactList(){
   const wraps=[$('artifactList'), $('artifactListSidebar')].filter(Boolean);
   if(!wraps.length)return;
-  const items=_loadArtifacts();
+  const items=_loadShelfArtifacts();
   if(!items.length){
     wraps.forEach(w=>w.innerHTML='<div class="artifact-empty">아직 아티팩트가 없습니다. 아티팩트 추가 또는 AI로 만들기 버튼을 눌러 시작해보세요.</div>');
     return;
@@ -595,7 +605,7 @@ async function rerunSetupPack(key){
 }
 
 function runPreflight(kind){
-  const artifacts=_loadArtifacts();
+  const artifacts=_loadShelfArtifacts();
   const modalOpen=$('artifactModalOverlay') && $('artifactModalOverlay').style.display!=='none';
   const artifactName=($('artifactName')&&$('artifactName').value||'').trim();
   const artifactType=($('artifactType')&&$('artifactType').value||'note').trim();
