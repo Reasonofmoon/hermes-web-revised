@@ -302,6 +302,7 @@ _FALLBACK_MODELS = [
     {'provider': 'Other',     'id': 'google/gemini-2.5-pro',            'label': 'Gemini 2.5 Pro'},
     {'provider': 'Other',     'id': 'deepseek/deepseek-chat-v3-0324',   'label': 'DeepSeek V3'},
     {'provider': 'Other',     'id': 'meta-llama/llama-4-scout',         'label': 'Llama 4 Scout'},
+    {'provider': 'Grok',      'id': 'grok-build',                       'label': 'Grok Build CLI'},
 ]
 
 # Provider display names for known Hermes provider IDs
@@ -312,6 +313,7 @@ _PROVIDER_DISPLAY = {
     'minimax': 'MiniMax', 'google': 'Google', 'meta-llama': 'Meta Llama',
     'huggingface': 'HuggingFace', 'alibaba': 'Alibaba',
     'ollama': 'Ollama', 'lmstudio': 'LM Studio',
+    'grok': 'Grok',
 }
 
 # Well-known models per provider (used to populate dropdown for direct API providers)
@@ -335,6 +337,9 @@ _PROVIDER_MODELS = {
         {'id': 'gpt-5.4',           'label': 'GPT-5.4'},
         {'id': 'gpt-5.4-mini',      'label': 'GPT-5.4 Mini'},
         {'id': 'codex-mini-latest', 'label': 'Codex Mini'},
+    ],
+    'grok': [
+        {'id': 'grok-build', 'label': 'Grok Build CLI'},
     ],
     'google': [
         {'id': 'gemini-2.5-pro', 'label': 'Gemini 2.5 Pro'},
@@ -577,6 +582,20 @@ def get_available_models() -> dict:
         detected_providers.add('minimax')
     if all_env.get('DEEPSEEK_API_KEY'):
         detected_providers.add('deepseek')
+    # Grok Build runs through the local WSL CLI, so expose it whenever the WebUI
+    # is running on a machine where `wsl.exe` can launch the installed CLI.
+    try:
+        import subprocess as _sp
+        _grok_check = _sp.run(
+            ['wsl.exe', '-d', os.getenv('HERMES_GROK_WSL_DISTRO', 'Ubuntu'), '--', 'bash', '-lc', 'command -v grok'],
+            text=True,
+            capture_output=True,
+            timeout=3,
+        )
+        if _grok_check.returncode == 0 and _grok_check.stdout.strip():
+            detected_providers.add('grok')
+    except Exception:
+        pass
 
     # 3. Fetch models from custom endpoint if base_url is configured
     auto_detected_models = []
@@ -697,7 +716,13 @@ def get_available_models() -> dict:
                     g['models'].insert(0, {'id': default_model, 'label': label})
                     injected = True
                     break
-            if not injected and groups:
+            if not injected and groups and default_model.startswith('grok'):
+                for g in groups:
+                    if g.get('provider') == 'Grok':
+                        g['models'].insert(0, {'id': default_model, 'label': label})
+                        injected = True
+                        break
+            if not injected and groups and groups[0].get('provider') != 'Grok':
                 groups[0]['models'].insert(0, {'id': default_model, 'label': label})
             elif not groups:
                 groups.append({'provider': active_provider or 'Default', 'models': [{'id': default_model, 'label': label}]})

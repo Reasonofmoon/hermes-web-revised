@@ -220,8 +220,29 @@ def list_profiles_api() -> list:
         from hermes_cli.profiles import list_profiles
         infos = list_profiles()
     except ImportError:
-        # hermes_cli not available -- return just the default
-        return [_default_profile_dict()]
+        # hermes_cli not available -- list profile directories directly so the
+        # WebUI profile manager still works in standalone mode.
+        active = _active_profile
+        result = [_default_profile_dict()]
+        profiles_dir = _DEFAULT_HERMES_HOME / 'profiles'
+        if profiles_dir.is_dir():
+            for profile_path in sorted(p for p in profiles_dir.iterdir() if p.is_dir()):
+                name = profile_path.name
+                if not _PROFILE_ID_RE.fullmatch(name):
+                    continue
+                cfg = _read_profile_config_summary(profile_path)
+                result.append({
+                    'name': name,
+                    'path': str(profile_path),
+                    'is_default': False,
+                    'is_active': name == active,
+                    'gateway_running': False,
+                    'model': cfg.get('model'),
+                    'provider': cfg.get('provider'),
+                    'has_env': (profile_path / '.env').exists(),
+                    'skill_count': len(list((profile_path / 'skills').iterdir())) if (profile_path / 'skills').is_dir() else 0,
+                })
+        return result
 
     active = _active_profile
     result = []
@@ -237,7 +258,32 @@ def list_profiles_api() -> list:
             'has_env': p.has_env,
             'skill_count': p.skill_count,
         })
+    _merge_profile_dirs(result, active)
     return result
+
+
+def _merge_profile_dirs(result: list, active: str) -> None:
+    """Append profile directories missing from hermes_cli's list."""
+    existing = {p.get('name') for p in result}
+    profiles_dir = _DEFAULT_HERMES_HOME / 'profiles'
+    if not profiles_dir.is_dir():
+        return
+    for profile_path in sorted(p for p in profiles_dir.iterdir() if p.is_dir()):
+        name = profile_path.name
+        if name in existing or not _PROFILE_ID_RE.fullmatch(name):
+            continue
+        cfg = _read_profile_config_summary(profile_path)
+        result.append({
+            'name': name,
+            'path': str(profile_path),
+            'is_default': False,
+            'is_active': name == active,
+            'gateway_running': False,
+            'model': cfg.get('model'),
+            'provider': cfg.get('provider'),
+            'has_env': (profile_path / '.env').exists(),
+            'skill_count': len(list((profile_path / 'skills').iterdir())) if (profile_path / 'skills').is_dir() else 0,
+        })
 
 
 def _default_profile_dict() -> dict:
@@ -246,13 +292,34 @@ def _default_profile_dict() -> dict:
         'name': 'default',
         'path': str(_DEFAULT_HERMES_HOME),
         'is_default': True,
-        'is_active': True,
+        'is_active': _active_profile == 'default',
         'gateway_running': False,
         'model': None,
         'provider': None,
         'has_env': (_DEFAULT_HERMES_HOME / '.env').exists(),
         'skill_count': 0,
     }
+
+
+def _read_profile_config_summary(profile_path: Path) -> dict:
+    """Best-effort summary used by standalone profile listing."""
+    cfg_path = profile_path / 'config.yaml'
+    if not cfg_path.exists():
+        return {}
+    try:
+        import yaml
+        cfg = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) or {}
+        model_cfg = cfg.get('model', {})
+        if isinstance(model_cfg, dict):
+            return {
+                'model': model_cfg.get('default') or model_cfg.get('model'),
+                'provider': model_cfg.get('provider'),
+            }
+        if isinstance(model_cfg, str):
+            return {'model': model_cfg, 'provider': None}
+    except Exception:
+        pass
+    return {}
 
 
 def _validate_profile_name(name: str):

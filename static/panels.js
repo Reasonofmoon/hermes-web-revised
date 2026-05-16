@@ -13,6 +13,7 @@ async function switchPanel(name) {
   if (name === 'tasks') await loadCrons();
   if (name === 'skills') await loadSkills();
   if (name === 'memory') await loadMemory();
+  if (name === 'wiki' && typeof window.loadLlmWiki === 'function') await window.loadLlmWiki();
   if (name === 'workspaces') await loadWorkspacesPanel();
   if (name === 'profiles') await loadProfilesPanel();
   if (name === 'todos') loadTodos();
@@ -24,6 +25,7 @@ async function switchPanel(name) {
     const surfaces = [];
     if (typeof window.loadAutoSessionCards === 'function') surfaces.push(window.loadAutoSessionCards());
     if (typeof window.loadAutoCronCards    === 'function') surfaces.push(window.loadAutoCronCards());
+    if (typeof window.loadAutoOrchestratorCards === 'function') surfaces.push(window.loadAutoOrchestratorCards());
     await Promise.all(surfaces);
     window.renderDeskBoard();
   }

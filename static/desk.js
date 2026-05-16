@@ -32,6 +32,8 @@ let _autoSessionCards = [];              // Phase Desk-2: sessions surfaced as c
 let _showAutoSessions = true;            // toggle visibility of auto-surfaced sessions
 let _autoCronCards    = [];              // Phase Desk-3: cron jobs surfaced as cards
 let _showAutoCrons    = true;            // toggle visibility of auto-surfaced cron jobs
+let _autoOrchestratorCards = [];         // Phase Desk-4: Codex delegated runs
+let _showAutoOrchestrator = true;        // toggle visibility of orchestrator records
 
 // ── Storage ────────────────────────────────────────────────────────────────
 function _loadDeskTasks(){
@@ -203,9 +205,9 @@ function renderDeskBoard(){
   // Phase Desk-3: cron cards filtered by search too
   const filteredCrons = _autoCronCards.filter(matchesSearch);
 
-  // Bucket by status. Manual tasks first (user-owned), then session, then cron.
+  // Bucket by status. Manual tasks first (user-owned), then session, cron, orchestration.
   const byStatus = {};
-  for(const c of _DESK_COLS) byStatus[c.id] = {manual: [], session: [], cron: []};
+  for(const c of _DESK_COLS) byStatus[c.id] = {manual: [], session: [], cron: [], orchestration: []};
   for(const t of filteredManual){
     const status = t.status && byStatus[t.status] ? t.status : 'inbox';
     byStatus[status].manual.push(t);
@@ -218,6 +220,10 @@ function renderDeskBoard(){
     const status = byStatus[c.status] ? c.status : 'inbox';
     byStatus[status].cron.push(c);
   }
+  for(const c of _autoOrchestratorCards.filter(matchesSearch)){
+    const status = byStatus[c.status] ? c.status : 'inbox';
+    byStatus[status].orchestration.push(c);
+  }
   // Sort each group: high priority first, then newest first.
   const sortByPrioThenTime = (a, b) => {
     const pa = a.priority === 'high' ? 0 : (a.priority === 'low' ? 2 : 1);
@@ -229,10 +235,11 @@ function renderDeskBoard(){
     byStatus[k].manual.sort(sortByPrioThenTime);
     byStatus[k].session.sort(sortByPrioThenTime);
     byStatus[k].cron.sort(sortByPrioThenTime);
+    byStatus[k].orchestration.sort(sortByPrioThenTime);
   }
 
   // Empty state — only when there are zero manual tasks, zero session cards, AND zero cron.
-  if(!manualTasks.length && !sessionCards.length && !_autoCronCards.length){
+  if(!manualTasks.length && !sessionCards.length && !_autoCronCards.length && !_autoOrchestratorCards.length){
     root.innerHTML = `
       <div class="desk-empty">
         <h4>아직 작업이 없습니다</h4>
@@ -258,11 +265,16 @@ function renderDeskBoard(){
                onchange="toggleAutoCrons()">
         예약 작업 카드 (${_autoCronCards.length}개)
       </label>
+      <label>
+        <input type="checkbox" ${_showAutoOrchestrator ? 'checked' : ''}
+               onchange="toggleAutoOrchestrator()">
+        Codex 위임 (${_autoOrchestratorCards.length}개)
+      </label>
     </div>`;
 
   root.innerHTML = autoToggle + _DESK_COLS.map(c => {
-    const bucket = byStatus[c.id] || {manual: [], session: [], cron: []};
-    const total = bucket.manual.length + bucket.session.length + bucket.cron.length;
+    const bucket = byStatus[c.id] || {manual: [], session: [], cron: [], orchestration: []};
+    const total = bucket.manual.length + bucket.session.length + bucket.cron.length + bucket.orchestration.length;
     return `
       <section class="desk-column" data-status="${c.id}">
         <header class="desk-col-header" style="--col-accent:${c.accent}">
@@ -274,7 +286,8 @@ function renderDeskBoard(){
             ? `<div class="desk-col-empty">비어 있음</div>`
             : bucket.manual.map(t => _renderTaskCard(t)).join('')
               + bucket.session.map(c => _renderSessionCard(c)).join('')
-              + bucket.cron.map(c => _renderCronCard(c)).join('')}
+              + bucket.cron.map(c => _renderCronCard(c)).join('')
+              + bucket.orchestration.map(c => _renderOrchestratorCard(c)).join('')}
         </div>
       </section>`;
   }).join('');
@@ -552,6 +565,75 @@ function _renderSessionCard(c){
     </div>`;
 }
 
+// ── Phase Desk-4: surface Codex orchestrator task records ────────────────
+async function loadAutoOrchestratorCards(){
+  if(!_showAutoOrchestrator){
+    _autoOrchestratorCards = [];
+    return;
+  }
+  try{
+    const data = typeof window.api === 'function'
+      ? await window.api('/api/orchestrator/tasks?limit=30')
+      : await (await fetch(new URL('/api/orchestrator/tasks?limit=30', location.origin).href, {credentials:'include'})).json();
+    _autoOrchestratorCards = (data.tasks || []).map(t => {
+      let status = 'inbox';
+      if(t.status === 'done') status = 'done';
+      else if(t.status === 'error' || t.status === 'cancelled') status = 'review';
+      else if(t.status === 'running') status = 'doing';
+      return {
+        _kind: 'orchestrator',
+        id: 'orch_' + t.task_id,
+        taskId: t.task_id,
+        sessionId: t.session_id,
+        title: (t.mode ? '[' + t.mode + '] ' : '') + (t.task || 'Codex delegated task'),
+        description: (t.assistant_text || '').slice(0, 260),
+        status,
+        priority: status === 'review' ? 'high' : 'normal',
+        profile: t.profile || '',
+        model: t.model || '',
+        createdAt: (t.created_at || 0) * 1000,
+        updatedAt: (t.created_at || 0) * 1000,
+      };
+    });
+  }catch(e){
+    console.warn('[desk] orchestrator surface failed:', e.message);
+    _autoOrchestratorCards = [];
+  }
+}
+
+function toggleAutoOrchestrator(){
+  _showAutoOrchestrator = !_showAutoOrchestrator;
+  if(_showAutoOrchestrator){
+    loadAutoOrchestratorCards().then(() => renderDeskBoard());
+  } else {
+    _autoOrchestratorCards = [];
+    renderDeskBoard();
+  }
+}
+
+function openOrchestratorCard(sessionId, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(sessionId && typeof window.loadSession === 'function') window.loadSession(sessionId);
+  if(typeof window.switchPanel === 'function') window.switchPanel('chat');
+}
+
+function _renderOrchestratorCard(c){
+  return `
+    <div class="desk-card desk-orchestrator-card"
+         onclick="openOrchestratorCard('${_escDesk(c.sessionId)}', event)"
+         title="Codex가 Hermes/Grok에 위임한 작업">
+      <div class="desk-card-header">
+        <span class="desk-orchestrator-marker" title="Codex delegated run">◇</span>
+        <div class="desk-card-title">${_escDesk(c.title)}</div>
+      </div>
+      <div class="desk-card-meta">
+        <span>${_escDesk(c.profile || 'profile')}</span>
+        <span>${_formatTaskTime(c.updatedAt || c.createdAt)}</span>
+      </div>
+      ${c.description ? `<div class="desk-card-desc">${_escDesk(c.description).replace(/\n/g, '<br>')}</div>` : ''}
+    </div>`;
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 function _initDesk(){
   // Re-render after the DOM is ready in case the user landed on the Desk
@@ -601,3 +683,7 @@ window.openCronCard          = openCronCard;
 window.cronCardRun           = cronCardRun;
 window.cronCardPause         = cronCardPause;
 window.cronCardResume        = cronCardResume;
+// Phase Desk-4 — Codex orchestration records
+window.loadAutoOrchestratorCards = loadAutoOrchestratorCards;
+window.toggleAutoOrchestrator = toggleAutoOrchestrator;
+window.openOrchestratorCard = openOrchestratorCard;

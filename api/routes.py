@@ -267,6 +267,13 @@ def handle_get(handler, parsed) -> bool:
     if parsed.path == '/api/crons/recent':
         return _handle_cron_recent(handler, parsed)
 
+    # ── Codex orchestration / LLM Wiki (GET) ──
+    if parsed.path == '/api/orchestrator/tasks':
+        return _handle_orchestrator_tasks(handler, parsed)
+
+    if parsed.path == '/api/llm-wiki':
+        return _handle_llm_wiki_read(handler, parsed)
+
     # ── Skills API (GET) ──
     if parsed.path == '/api/skills':
         from tools.skills_tool import skills_list as _skills_list
@@ -456,6 +463,9 @@ def handle_post(handler, parsed) -> bool:
     # ── Memory (POST) ──
     if parsed.path == '/api/memory/write':
         return _handle_memory_write(handler, body)
+
+    if parsed.path == '/api/llm-wiki/write':
+        return _handle_llm_wiki_write(handler, body)
 
     # ── Profile API (POST) ──
     if parsed.path == '/api/profile/switch':
@@ -745,6 +755,7 @@ def _handle_sse_stream(handler, parsed):
                 continue
             _sse(handler, event, data)
             if event in ('done', 'error', 'cancel'):
+                handler.close_connection = True
                 break
     except (BrokenPipeError, ConnectionResetError):
         pass
@@ -866,6 +877,163 @@ def _handle_cron_recent(handler, parsed):
         return j(handler, {'completions': [], 'since': since})
 
 
+def _orchestrator_tasks_dir() -> Path:
+    return STATE_DIR / 'orchestrator' / 'tasks'
+
+
+def _handle_orchestrator_tasks(handler, parsed):
+    qs = parse_qs(parsed.query)
+    try:
+        limit = max(1, min(100, int(qs.get('limit', ['25'])[0])))
+    except ValueError:
+        limit = 25
+    task_id = qs.get('task_id', [''])[0].strip()
+    tasks_dir = _orchestrator_tasks_dir()
+    if task_id:
+        target = safe_resolve(tasks_dir, f'{task_id}.json')
+        if not target.exists():
+            return bad(handler, 'Task not found', 404)
+        try:
+            return j(handler, {'task': json.loads(target.read_text(encoding='utf-8'))})
+        except Exception as e:
+            return bad(handler, f'Invalid task record: {e}', 500)
+    tasks = []
+    if tasks_dir.exists():
+        paths = sorted(tasks_dir.glob('*.json'), key=lambda p: p.stat().st_mtime, reverse=True)
+        for path in paths[:limit]:
+            try:
+                data = json.loads(path.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            tasks.append({
+                'task_id': data.get('task_id') or path.stem,
+                'status': data.get('status') or 'unknown',
+                'profile': data.get('profile') or '',
+                'model': data.get('model') or '',
+                'workspace': data.get('workspace') or '',
+                'session_id': data.get('session_id') or '',
+                'mode': data.get('mode') or '',
+                'task': data.get('task') or '',
+                'assistant_text': data.get('assistant_text') or '',
+                'created_at': data.get('created_at') or path.stat().st_mtime,
+                'record_path': str(path),
+            })
+    return j(handler, {'tasks': tasks})
+
+
+_LLM_WIKI_SEEDS = {
+    'overview': (
+        'Overview',
+        '# LLM Wiki\n\n'
+        'Codex is the supervising orchestrator. Hermes Web stores sessions, profiles, cron jobs, and task history. '
+        'Grok Build CLI executes delegated work through the `grok-build` model.\n\n'
+        'Use this wiki as the operating handbook for multi-agent work: what to delegate, which profile to use, '
+        'how to verify, and when to schedule repeatable work.\n'
+    ),
+    'orchestration': (
+        'Orchestration Runbook',
+        '# Orchestration Runbook\n\n'
+        '## Default Flow\n\n'
+        '1. Codex classifies the task: build, design, research/data, review, or cron.\n'
+        '2. Codex picks a Hermes profile and delegates through `scripts/hermes_orchestrator.py`.\n'
+        '3. Hermes Web creates a session and streams Grok Build output.\n'
+        '4. Codex reads the task record, checks files/tests/browser state, and decides the next step.\n\n'
+        '## Command\n\n'
+        '```powershell\n'
+        'python scripts\\hermes_orchestrator.py run --profile orchestrator --mode build "Task"\n'
+        '```\n'
+    ),
+    'profiles': (
+        'Profiles',
+        '# Profiles\n\n'
+        '- `codex-orchestrator`: generic Codex delegate.\n'
+        '- `edtech-developer`: integrated edtech builder.\n'
+        '- `edtech-product-designer`: learner, teacher, and admin UX.\n'
+        '- `curriculum-architect`: learning objectives, sequence, assessment, rubrics.\n'
+        '- `teacher-tools-builder`: teacher workflows, grading, feedback, class operations.\n'
+    ),
+    'cron': (
+        'Cron Automation',
+        '# Cron Automation\n\n'
+        'Use cron when work is repeatable: weekly reviews, scheduled data collection, recurring reports, monitoring, '
+        'or periodic learning-content updates.\n\n'
+        '```powershell\n'
+        'python scripts\\hermes_orchestrator.py cron --profile integrated --name "Weekly review" --schedule "0 9 * * 1" "Prompt"\n'
+        '```\n'
+    ),
+    'guardrails': (
+        'Guardrails',
+        '# Guardrails\n\n'
+        '- Codex remains the final verifier.\n'
+        '- Delegates must report changed files, artifacts, verification steps, assumptions, and risks.\n'
+        '- Ask before destructive changes, public publishing, credential handling, paid actions, or sensitive data transmission.\n'
+        '- Keep delegated work scoped to the active workspace unless explicitly assigned otherwise.\n'
+    ),
+}
+
+
+def _llm_wiki_dir() -> Path:
+    return STATE_DIR / 'llm_wiki'
+
+
+def _llm_wiki_title(slug: str, content: str) -> str:
+    for line in content.splitlines():
+        if line.startswith('# '):
+            return line[2:].strip() or slug
+    return _LLM_WIKI_SEEDS.get(slug, (slug.replace('-', ' ').title(), ''))[0]
+
+
+def _ensure_llm_wiki() -> Path:
+    wiki_dir = _llm_wiki_dir()
+    wiki_dir.mkdir(parents=True, exist_ok=True)
+    for slug, (_, content) in _LLM_WIKI_SEEDS.items():
+        path = wiki_dir / f'{slug}.md'
+        if not path.exists():
+            path.write_text(content, encoding='utf-8')
+    return wiki_dir
+
+
+def _valid_wiki_slug(slug: str) -> bool:
+    import re as _re
+    return bool(_re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}', slug or ''))
+
+
+def _handle_llm_wiki_read(handler, parsed):
+    wiki_dir = _ensure_llm_wiki()
+    qs = parse_qs(parsed.query)
+    active_slug = qs.get('slug', ['overview'])[0].strip() or 'overview'
+    if not _valid_wiki_slug(active_slug):
+        return bad(handler, 'Invalid wiki slug', 400)
+    pages = []
+    for path in sorted(wiki_dir.glob('*.md')):
+        slug = path.stem
+        if not _valid_wiki_slug(slug):
+            continue
+        content = path.read_text(encoding='utf-8', errors='replace')
+        excerpt = ' '.join(line.strip() for line in content.splitlines() if line.strip() and not line.startswith('#'))[:180]
+        pages.append({
+            'slug': slug,
+            'title': _llm_wiki_title(slug, content),
+            'updated_at': path.stat().st_mtime,
+            'excerpt': excerpt,
+        })
+    active_path = wiki_dir / f'{active_slug}.md'
+    if not active_path.exists() and pages:
+        active_slug = pages[0]['slug']
+        active_path = wiki_dir / f'{active_slug}.md'
+    content = active_path.read_text(encoding='utf-8', errors='replace') if active_path.exists() else ''
+    return j(handler, {
+        'pages': pages,
+        'active': {
+            'slug': active_slug,
+            'title': _llm_wiki_title(active_slug, content),
+            'content': content,
+            'path': str(active_path),
+            'updated_at': active_path.stat().st_mtime if active_path.exists() else None,
+        },
+    })
+
+
 def _handle_memory_read(handler):
     try:
         from api.profiles import get_active_hermes_home
@@ -934,11 +1102,27 @@ def _handle_chat_start(handler, body):
 def _handle_chat_sync(handler, body):
     """Fallback synchronous chat endpoint (POST /api/chat). Not used by frontend."""
     from api.config import _get_session_agent_lock
+    from api.grok_cli import is_grok_model, run_grok_cli_stream
     s = get_session(body['session_id'])
     msg = str(body.get('message', '')).strip()
     if not msg: return j(handler, {'error': 'empty message'}, status=400)
     workspace = Path(body.get('workspace') or s.workspace).expanduser().resolve()
     s.workspace = str(workspace); s.model = body.get('model') or s.model
+    if is_grok_model(s.model):
+        chunks = []
+        result = run_grok_cli_stream(
+            session=s,
+            msg_text=msg,
+            model=s.model,
+            workspace=s.workspace,
+            put=lambda event, data: chunks.append(data.get('text', '')) if event == 'token' else None,
+        )
+        return j(handler, {
+            'answer': result.get('final_response') or ''.join(chunks),
+            'status': 'done',
+            'session': s.compact() | {'messages': s.messages},
+            'result': {k: v for k, v in result.items() if k != 'messages'},
+        })
     old_cwd = os.environ.get('TERMINAL_CWD')
     os.environ['TERMINAL_CWD'] = str(workspace)
     old_exec_ask = os.environ.get('HERMES_EXEC_ASK')
@@ -1264,6 +1448,25 @@ def _handle_memory_write(handler, body):
         return bad(handler, 'section must be "memory" or "user"')
     target.write_text(body['content'], encoding='utf-8')
     return j(handler, {'ok': True, 'section': section, 'path': str(target)})
+
+
+def _handle_llm_wiki_write(handler, body):
+    slug = str(body.get('slug', '')).strip()
+    content = str(body.get('content', ''))
+    if not slug:
+        return bad(handler, 'slug is required')
+    if not _valid_wiki_slug(slug):
+        return bad(handler, 'Invalid wiki slug', 400)
+    wiki_dir = _ensure_llm_wiki()
+    target = wiki_dir / f'{slug}.md'
+    target.write_text(content, encoding='utf-8')
+    return j(handler, {
+        'ok': True,
+        'slug': slug,
+        'title': _llm_wiki_title(slug, content),
+        'path': str(target),
+        'updated_at': target.stat().st_mtime,
+    })
 
 
 def _handle_session_import_cli(handler, body):
