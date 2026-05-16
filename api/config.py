@@ -373,6 +373,7 @@ _PROVIDER_MODELS = {
     ],
     'xai': [
         {'id': 'grok-build',                 'label': 'Grok Build (CLI proxy)'},
+        {'id': 'grok-4.3',                   'label': 'Grok 4.3'},
         {'id': 'grok-4',                     'label': 'Grok 4'},
         {'id': 'grok-4-fast',                'label': 'Grok 4 Fast'},
         {'id': 'grok-4-1-fast',              'label': 'Grok 4.1 Fast'},
