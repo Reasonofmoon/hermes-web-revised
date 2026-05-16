@@ -312,6 +312,7 @@ _PROVIDER_DISPLAY = {
     'minimax': 'MiniMax', 'google': 'Google', 'meta-llama': 'Meta Llama',
     'huggingface': 'HuggingFace', 'alibaba': 'Alibaba',
     'ollama': 'Ollama', 'lmstudio': 'LM Studio',
+    'xai': 'xAI / Grok',
 }
 
 # Well-known models per provider (used to populate dropdown for direct API providers)
@@ -370,6 +371,13 @@ _PROVIDER_MODELS = {
         {'id': 'MiniMax-M2.5-highspeed', 'label': 'MiniMax M2.5 Highspeed'},
         {'id': 'MiniMax-M2.1',           'label': 'MiniMax M2.1'},
     ],
+    'xai': [
+        {'id': 'grok-build',                 'label': 'Grok Build (CLI proxy)'},
+        {'id': 'grok-4',                     'label': 'Grok 4'},
+        {'id': 'grok-4-fast',                'label': 'Grok 4 Fast'},
+        {'id': 'grok-4-1-fast',              'label': 'Grok 4.1 Fast'},
+        {'id': 'grok-code-fast-1',           'label': 'Grok Code Fast 1'},
+    ],
 }
 
 
@@ -416,6 +424,16 @@ def resolve_model_provider(model_id: str) -> tuple:
     local_family_prefixes = ('Darwin-', 'darwin-', 'mlx-', 'local-')
     model_basename = os.path.basename(model_id) if model_id else ''
 
+    # xAI / Grok family: route bare model IDs to the xai provider when
+    # XAI_API_KEY (env or profile .env) is present. This lets the dropdown
+    # surface grok-build etc. without forcing the user to pin model.provider
+    # in config.yaml.
+    xai_family_prefixes = ('grok-', 'grok_')
+    xai_authed = bool(os.getenv('XAI_API_KEY'))
+    if xai_authed and '/' not in model_id and model_id.startswith(xai_family_prefixes):
+        xai_base = os.getenv('XAI_BASE_URL') or None
+        return model_id, 'xai', xai_base
+
     # If the selected model looks like a local/custom model (Darwin, MLX, etc.),
     # prefer the authenticated custom:darwin provider instead of whatever remote
     # provider is currently pinned in config.yaml. Support both bare names and
@@ -450,6 +468,11 @@ def resolve_model_provider(model_id: str) -> tuple:
                 return bare, 'openai-codex', None
         if prefix == 'openai-codex':
             return bare, 'openai-codex', None
+
+        # xai/grok-build, x-ai/grok-4, grok/grok-build → route to xai provider
+        # when authenticated. Falls through to openrouter otherwise.
+        if prefix in ('xai', 'x-ai', 'grok') and xai_authed:
+            return bare, 'xai', os.getenv('XAI_BASE_URL') or None
 
         # Fallback cross-provider routing.
         if prefix in _PROVIDER_MODELS and prefix != config_provider:
@@ -535,7 +558,8 @@ def get_available_models() -> dict:
     # Merge with actual env
     all_env = {**env_keys}
     for k in ('ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY',
-              'GOOGLE_API_KEY', 'GLM_API_KEY', 'KIMI_API_KEY', 'DEEPSEEK_API_KEY'):
+              'GOOGLE_API_KEY', 'GLM_API_KEY', 'KIMI_API_KEY', 'DEEPSEEK_API_KEY',
+              'XAI_API_KEY'):
         val = os.getenv(k)
         if val:
             all_env[k] = val
@@ -577,6 +601,8 @@ def get_available_models() -> dict:
         detected_providers.add('minimax')
     if all_env.get('DEEPSEEK_API_KEY'):
         detected_providers.add('deepseek')
+    if all_env.get('XAI_API_KEY'):
+        detected_providers.add('xai')
 
     # 3. Fetch models from custom endpoint if base_url is configured
     auto_detected_models = []
