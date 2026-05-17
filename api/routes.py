@@ -1242,10 +1242,49 @@ def _handle_cron_run(handler, body):
     job_id = body.get('job_id', '')
     if not job_id: return bad(handler, 'job_id required')
     from cron.jobs import get_job
-    from cron.scheduler import run_job
     job = get_job(job_id)
     if not job: return bad(handler, 'Job not found', 404)
-    threading.Thread(target=run_job, args=(job,), daemon=True).start()
+
+    def _run_and_record():
+        from cron.jobs import mark_job_run, save_job_output
+        try:
+            model = job.get("model") or ""
+            if model in ("grok-build", "grok/grok-build"):
+                from api.grok_cli import run_grok_cli_stream
+                from api.models import new_session
+                from api.workspace import get_last_workspace
+                workspace = job.get("workdir") or get_last_workspace()
+                chunks = []
+                session = new_session(workspace=workspace, model=model)
+                result = run_grok_cli_stream(
+                    session=session,
+                    msg_text=job.get("prompt") or "",
+                    model=model,
+                    workspace=workspace,
+                    put=lambda event, data: chunks.append(data.get("text", "")) if event == "token" else None,
+                )
+                final_response = (result.get("final_response") or "".join(chunks)).strip()
+                success = bool(final_response)
+                error = None if success else "Grok Build completed but produced empty response"
+                output = (
+                    f"# Cron Job: {job.get('name', job['id'])}\n\n"
+                    f"**Status:** {'success' if success else 'error'}\n"
+                    f"**Model:** {model}\n"
+                    f"**Workspace:** {workspace}\n\n"
+                    f"## Output\n\n{final_response or error}\n"
+                )
+            else:
+                from cron.scheduler import run_job
+                success, output, final_response, error = run_job(job)
+            save_job_output(job["id"], output)
+            if success and not final_response:
+                success = False
+                error = "Agent completed but produced empty response"
+            mark_job_run(job["id"], success, error)
+        except Exception as e:
+            mark_job_run(job["id"], False, str(e))
+
+    threading.Thread(target=_run_and_record, daemon=True).start()
     return j(handler, {'ok': True, 'job_id': job_id, 'status': 'triggered'})
 
 

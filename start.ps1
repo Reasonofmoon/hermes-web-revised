@@ -35,6 +35,7 @@ if (Test-Path $EnvFile) {
         $k, $v = $_ -split '=', 2
         $k = $k.Trim()
         $v = $v.Trim().Trim('"').Trim("'")
+        $v = [Environment]::ExpandEnvironmentVariables($v)
         if ($k) { [Environment]::SetEnvironmentVariable($k, $v, 'Process') }
     }
 }
