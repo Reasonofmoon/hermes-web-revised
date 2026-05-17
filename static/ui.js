@@ -177,6 +177,19 @@ function renderMd(raw){
     t=t.replace(/<\/?[a-z][^>]*>/gi,tag=>SAFE_INLINE.test(tag)?tag:esc(tag));
     return t;
   }
+  const mediaStash=[];
+  function mediaHtml(url, alt){
+    const safeUrl=esc(url);
+    const safeAlt=esc(alt||'Generated image');
+    if(/\.(png|jpe?g|webp|gif)(?:[?#].*)?$/i.test(url)){
+      const html=`<figure class="generated-media"><a href="${safeUrl}" target="_blank" rel="noopener"><img src="${safeUrl}" alt="${safeAlt}" loading="lazy" referrerpolicy="no-referrer"></a><figcaption><a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a></figcaption></figure>`;
+      mediaStash.push(html);
+      return '\x00M'+(mediaStash.length-1)+'\x00';
+    }
+    return `<a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>`;
+  }
+  s=s.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g,(_,alt,url)=>mediaHtml(url,alt));
+  s=s.replace(/(^|[\s>])((?:https?:\/\/)[^\s<>"')]+?\.(?:png|jpe?g|webp|gif)(?:[?#][^\s<>"')]+)?)(?=$|[\s<])/g,(m,prefix,url)=>`${prefix}${mediaHtml(url,'Generated image')}`);
   s=s.replace(/\*\*\*(.+?)\*\*\*/g,(_,t)=>`<strong><em>${esc(t)}</em></strong>`);
   s=s.replace(/\*\*(.+?)\*\*/g,(_,t)=>`<strong>${esc(t)}</strong>`);
   s=s.replace(/\*([^*\n]+)\*/g,(_,t)=>`<em>${esc(t)}</em>`);
@@ -234,7 +247,9 @@ function renderMd(raw){
   s=s.replace(/<\/?[a-z][^>]*>/gi,tag=>SAFE_TAGS.test(tag)?tag:esc(tag));
   s=s.replace(/\x00M(\d+)\x00/g,(_,i)=>mediaStash[+i]||'');
   const parts=s.split(/\n{2,}/);
-  s=parts.map(p=>{p=p.trim();if(!p)return '';if(/^<(h[1-6]|ul|ol|pre|hr|blockquote)/.test(p))return p;return `<p>${p.replace(/\n/g,'<br>')}</p>`;}).join('\n');
+  s=parts.map(p=>{p=p.trim();if(!p)return '';if(/^<(h[1-6]|ul|ol|pre|hr|blockquote)/.test(p)||/^\x00M\d+\x00$/.test(p))return p;return `<p>${p.replace(/\n/g,'<br>')}</p>`;}).join('\n');
+  s=s.replace(/<p>(\x00M\d+\x00)<\/p>/g,'$1');
+  s=s.replace(/\x00M(\d+)\x00/g,(_,i)=>mediaStash[+i]||'');
   return s;
 }
 

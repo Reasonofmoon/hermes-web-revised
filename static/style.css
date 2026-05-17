@@ -437,6 +437,10 @@
   .msg-body blockquote{border-left:3px solid var(--blue);padding-left:14px;color:var(--muted);font-style:italic;margin:10px 0;}
   .msg-body a{color:var(--blue);text-decoration:underline;}
   .msg-body hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
+  .generated-media{margin:10px 0 12px;padding:0;max-width:min(100%,680px);}
+  .generated-media img{display:block;width:100%;max-height:560px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.18);box-shadow:0 10px 32px rgba(0,0,0,.24);}
+  .generated-media figcaption{margin-top:6px;font-size:11px;line-height:1.35;color:var(--muted);word-break:break-all;}
+  .generated-media figcaption a{color:var(--muted);}
   .msg-files{display:flex;flex-wrap:wrap;gap:6px;padding-left:30px;margin-bottom:10px;}
   .msg-file-badge{display:flex;align-items:center;gap:5px;background:rgba(124,185,255,0.1);border:1px solid rgba(124,185,255,0.25);border-radius:6px;padding:4px 9px;font-size:12px;color:var(--blue);}
   .thinking{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:13px;padding-left:30px;}
