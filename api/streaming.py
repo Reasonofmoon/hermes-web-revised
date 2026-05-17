@@ -31,6 +31,7 @@ except ImportError:
 from api.models import get_session, title_from
 from api.workspace import set_last_workspace
 from api.grok_cli import is_grok_model, run_grok_cli_stream
+from api.grok_imagine import is_grok_imagine_model, run_grok_imagine
 
 # Fields that are safe to send to LLM provider APIs.
 # Everything else (attachments, timestamp, _ts, etc.) is display-only
@@ -86,6 +87,24 @@ def _run_agent_streaming(session_id, msg_text, model, workspace, stream_id, atta
         s = get_session(session_id)
         s.workspace = str(Path(workspace).expanduser().resolve())
         s.model = model
+
+        if is_grok_imagine_model(model):
+            result = run_grok_imagine(
+                session=s,
+                msg_text=msg_text,
+                model=model,
+                workspace=s.workspace,
+                put=put,
+                attachments=attachments,
+            )
+            put('done', {
+                'session': s.compact() | {
+                    'messages': result.get('messages') or s.messages,
+                    'tool_calls': result.get('tool_calls') or [],
+                },
+                'usage': result.get('usage') or {},
+            })
+            return
 
         if is_grok_model(model):
             result = run_grok_cli_stream(

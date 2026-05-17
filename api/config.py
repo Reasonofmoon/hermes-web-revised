@@ -303,6 +303,8 @@ _FALLBACK_MODELS = [
     {'provider': 'Other',     'id': 'deepseek/deepseek-chat-v3-0324',   'label': 'DeepSeek V3'},
     {'provider': 'Other',     'id': 'meta-llama/llama-4-scout',         'label': 'Llama 4 Scout'},
     {'provider': 'Grok',      'id': 'grok-build',                       'label': 'Grok Build CLI'},
+    {'provider': 'Grok',      'id': 'grok-imagine-image-quality',        'label': 'Grok Imagine Image (Quality)'},
+    {'provider': 'Grok',      'id': 'grok-imagine-video',                'label': 'Grok Imagine Video'},
 ]
 
 # Provider display names for known Hermes provider IDs
@@ -340,6 +342,8 @@ _PROVIDER_MODELS = {
     ],
     'grok': [
         {'id': 'grok-build', 'label': 'Grok Build CLI'},
+        {'id': 'grok-imagine-image-quality', 'label': 'Grok Imagine Image (Quality)'},
+        {'id': 'grok-imagine-video', 'label': 'Grok Imagine Video'},
     ],
     'google': [
         {'id': 'gemini-2.5-pro', 'label': 'Gemini 2.5 Pro'},

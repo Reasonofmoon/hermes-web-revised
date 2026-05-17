@@ -71,10 +71,10 @@ model:
   provider: xai-oauth
   default: grok-4.3
   base_url: https://api.x.ai/v1
-workspace: "$worldMonitorResolved"
-default_workspace: "$worldMonitorResolved"
+workspace: '$worldMonitorResolved'
+default_workspace: '$worldMonitorResolved'
 terminal:
-  cwd: "$worldMonitorResolved"
+  cwd: '$worldMonitorResolved'
 profile:
   name: worldmonitor-intel
   purpose: "World Monitor intelligence, situation briefs, risk analysis, and operations guardrails."

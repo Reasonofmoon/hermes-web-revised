@@ -1103,11 +1103,27 @@ def _handle_chat_sync(handler, body):
     """Fallback synchronous chat endpoint (POST /api/chat). Not used by frontend."""
     from api.config import _get_session_agent_lock
     from api.grok_cli import is_grok_model, run_grok_cli_stream
+    from api.grok_imagine import is_grok_imagine_model, run_grok_imagine
     s = get_session(body['session_id'])
     msg = str(body.get('message', '')).strip()
     if not msg: return j(handler, {'error': 'empty message'}, status=400)
     workspace = Path(body.get('workspace') or s.workspace).expanduser().resolve()
     s.workspace = str(workspace); s.model = body.get('model') or s.model
+    if is_grok_imagine_model(s.model):
+        chunks = []
+        result = run_grok_imagine(
+            session=s,
+            msg_text=msg,
+            model=s.model,
+            workspace=s.workspace,
+            put=lambda event, data: chunks.append(data.get('text', '')) if event == 'token' else None,
+        )
+        return j(handler, {
+            'answer': result.get('final_response') or ''.join(chunks),
+            'status': 'done',
+            'session': s.compact() | {'messages': s.messages},
+            'result': {k: v for k, v in result.items() if k != 'messages'},
+        })
     if is_grok_model(s.model):
         chunks = []
         result = run_grok_cli_stream(

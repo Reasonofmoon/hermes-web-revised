@@ -204,6 +204,15 @@ function renderMd(raw){
     }
     return html+'</ol>';
   });
+  const mediaStash=[];
+  s=s.replace(/!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g,(_,alt,url)=>{
+    mediaStash.push(`<img src="${esc(url)}" alt="${esc(alt||'image')}" loading="lazy" style="max-width:100%;border-radius:8px;border:1px solid var(--border2)">`);
+    return '\x00M'+(mediaStash.length-1)+'\x00';
+  });
+  s=s.replace(/!video\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g,(_,alt,url)=>{
+    mediaStash.push(`<video controls src="${esc(url)}" title="${esc(alt||'video')}" style="max-width:100%;border-radius:8px;border:1px solid var(--border2)"></video>`);
+    return '\x00M'+(mediaStash.length-1)+'\x00';
+  });
   s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,(_,label,url)=>`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`);
   // Tables: | col | col | header row followed by | --- | --- | separator then data rows
   s=s.replace(/((?:^\|.+\|\n?)+)/gm,block=>{
@@ -223,6 +232,7 @@ function renderMd(raw){
   // <div class="..."> (mermaid/pre-header). Everything else is untrusted input.
   const SAFE_TAGS=/^<\/?(strong|em|code|pre|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|hr|blockquote|p|br|a|div)([\s>]|$)/i;
   s=s.replace(/<\/?[a-z][^>]*>/gi,tag=>SAFE_TAGS.test(tag)?tag:esc(tag));
+  s=s.replace(/\x00M(\d+)\x00/g,(_,i)=>mediaStash[+i]||'');
   const parts=s.split(/\n{2,}/);
   s=parts.map(p=>{p=p.trim();if(!p)return '';if(/^<(h[1-6]|ul|ol|pre|hr|blockquote)/.test(p))return p;return `<p>${p.replace(/\n/g,'<br>')}</p>`;}).join('\n');
   return s;
