@@ -308,6 +308,8 @@ _FALLBACK_MODELS = [
 ]
 
 # Provider display names for known Hermes provider IDs
+XAI_BASE_URL = 'https://api.x.ai/v1'
+
 _PROVIDER_DISPLAY = {
     'nous': 'Nous Portal', 'openrouter': 'OpenRouter', 'anthropic': 'Anthropic',
     'openai': 'OpenAI', 'openai-codex': 'OpenAI Codex', 'copilot': 'GitHub Copilot',
@@ -315,7 +317,7 @@ _PROVIDER_DISPLAY = {
     'minimax': 'MiniMax', 'google': 'Google', 'meta-llama': 'Meta Llama',
     'huggingface': 'HuggingFace', 'alibaba': 'Alibaba',
     'ollama': 'Ollama', 'lmstudio': 'LM Studio',
-    'grok': 'Grok',
+    'grok': 'Grok', 'xai-oauth': 'xAI Grok OAuth', 'xai': 'xAI',
 }
 
 # Well-known models per provider (used to populate dropdown for direct API providers)
@@ -344,6 +346,12 @@ _PROVIDER_MODELS = {
         {'id': 'grok-build', 'label': 'Grok Build CLI'},
         {'id': 'grok-imagine-image-quality', 'label': 'Grok Imagine Image (Quality)'},
         {'id': 'grok-imagine-video', 'label': 'Grok Imagine Video'},
+    ],
+    'xai-oauth': [
+        {'id': 'grok-4.3', 'label': 'Grok 4.3'},
+    ],
+    'xai': [
+        {'id': 'grok-4.3', 'label': 'Grok 4.3'},
     ],
     'google': [
         {'id': 'gemini-2.5-pro', 'label': 'Gemini 2.5 Pro'},
@@ -434,6 +442,9 @@ def resolve_model_provider(model_id: str) -> tuple:
             return model_id, 'custom:darwin', None
         if config_provider and str(config_provider).startswith('custom:'):
             return model_id, config_provider, config_base_url
+
+    if model_id.startswith('grok-') and model_id not in {'grok-build'}:
+        return model_id, 'xai-oauth', XAI_BASE_URL
 
     # Bare model chosen from the WebUI dropdown while config is pinned to a
     # local/custom backend: route to OpenAI Codex if authenticated.

@@ -186,10 +186,16 @@ function renderMd(raw){
       mediaStash.push(html);
       return '\x00M'+(mediaStash.length-1)+'\x00';
     }
+    if(/\.(mp4|webm|mov)(?:[?#].*)?$/i.test(url)){
+      const html=`<figure class="generated-media"><video src="${safeUrl}" controls preload="metadata"></video><figcaption><a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a></figcaption></figure>`;
+      mediaStash.push(html);
+      return '\x00M'+(mediaStash.length-1)+'\x00';
+    }
     return `<a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>`;
   }
   s=s.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g,(_,alt,url)=>mediaHtml(url,alt));
   s=s.replace(/(^|[\s>])((?:https?:\/\/)[^\s<>"')]+?\.(?:png|jpe?g|webp|gif)(?:[?#][^\s<>"')]+)?)(?=$|[\s<])/g,(m,prefix,url)=>`${prefix}${mediaHtml(url,'Generated image')}`);
+  s=s.replace(/(^|[\s>])((?:https?:\/\/|\/)[^\s<>"')]+?\.(?:mp4|webm|mov)(?:[?#][^\s<>"')]+)?)(?=$|[\s<])/g,(m,prefix,url)=>`${prefix}${mediaHtml(url,'Generated video')}`);
   s=s.replace(/\*\*\*(.+?)\*\*\*/g,(_,t)=>`<strong><em>${esc(t)}</em></strong>`);
   s=s.replace(/\*\*(.+?)\*\*/g,(_,t)=>`<strong>${esc(t)}</strong>`);
   s=s.replace(/\*([^*\n]+)\*/g,(_,t)=>`<em>${esc(t)}</em>`);

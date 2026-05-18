@@ -404,6 +404,24 @@ def handle_post(handler, parsed) -> bool:
     if parsed.path == '/api/chat':
         return _handle_chat_sync(handler, body)
 
+    if parsed.path == '/api/imagine/image':
+        try:
+            from api.imagine import generate_image
+            return j(handler, generate_image(body))
+        except ValueError as e:
+            return bad(handler, str(e))
+        except Exception as e:
+            return bad(handler, str(e), 500)
+
+    if parsed.path == '/api/imagine/video':
+        try:
+            from api.imagine import generate_video
+            return j(handler, generate_video(body))
+        except ValueError as e:
+            return bad(handler, str(e))
+        except Exception as e:
+            return bad(handler, str(e), 500)
+
     # ── Cron API (POST) ──
     if parsed.path == '/api/crons/create':
         return _handle_cron_create(handler, body)
